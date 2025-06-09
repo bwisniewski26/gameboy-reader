@@ -13,10 +13,12 @@ namespace GameBoyReader.Core.Services
             CartridgeInformation information = new();
             try
             {
-                information.Name = Encoding.ASCII.GetString(arduinoClient.RetrieveBytes(comPort, "GET_TITLE").ToArray());
-                information.Type = CartridgeTypeConverter.ConvertFromByte(arduinoClient.RetrieveBytes(comPort, "GET_MBC").First());
-                information.ROMSize = arduinoClient.RetrieveBytes(comPort, "GET_ROM_SIZE").First();
-                information.RAMSize = arduinoClient.RetrieveBytes(comPort, "GET_RAM_SIZE").First();
+                arduinoClient.startConnection(comPort);
+                information.Name = Encoding.ASCII.GetString(arduinoClient.RetrieveBytes("GET_TITLE").ToArray());
+                information.Type = CartridgeTypeConverter.ConvertFromByte(arduinoClient.RetrieveBytes("GET_MBC").First());
+                information.ROMSize = arduinoClient.RetrieveBytes("GET_ROM_SIZE").First();
+                information.RAMSize = arduinoClient.RetrieveBytes("GET_RAM_SIZE").First();
+                arduinoClient.stopConnection(comPort);
             }
             catch (Exception e)
             {
@@ -31,8 +33,10 @@ namespace GameBoyReader.Core.Services
             List<Byte> bitmap = new();
             try
             {
-                bitmap = arduinoClient.RetrieveBytes(comPort, "GET_HEADER");
-                
+                arduinoClient.startConnection(comPort);
+                bitmap = arduinoClient.RetrieveBytes("GET_HEADER");
+                arduinoClient.stopConnection(comPort);
+
             } catch (Exception e)
             {
                 Console.WriteLine(e);

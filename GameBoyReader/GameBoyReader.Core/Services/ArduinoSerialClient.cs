@@ -10,69 +10,77 @@ namespace GameBoyReader.Core.Services
     public class ArduinoSerialClient : IArduinoSerialClient
     {
         public SerialPort? serialPort;
+
+        public void startConnection(string comPort)
+        {
+            serialPort = new SerialPort(comPort, 115200);
+            serialPort.Open();
+        }
+        public void stopConnection(string comPort)
+        {
+            serialPort.Close();
+        }
         public string[] RetrieveAvailableCOMPorts()
         {
             return SerialPort.GetPortNames();
         }
 
-        public List<byte> RetrieveBytes(string comPort, string readerCommand)
+        public List<byte> RetrieveBytes(string readerCommand)
         {
             List<byte> readResult = new();
-            using (SerialPort serialPort = new SerialPort(comPort, 115200))
+            serialPort.ReadTimeout = 500; // 500 ms
+            Thread.Sleep(1000);
+            serialPort.WriteLine(readerCommand);
+
+            try
             {
-                serialPort.ReadTimeout = 500; // 500 ms
-                serialPort.Open();
-                Thread.Sleep(1000);
-                serialPort.WriteLine(readerCommand);
+                StringBuilder textBuffer = new();
+                Queue<byte> byteBuffer = new();
 
-                try
+                bool foundHeaderStart = false;
+
+                while (true)
                 {
-                    StringBuilder textBuffer = new();
-                    Queue<byte> byteBuffer = new();
+                    int result = serialPort.ReadByte();
+                    byte b = (byte)result;
 
-                    bool foundHeaderStart = false;
+                    byteBuffer.Enqueue(b);
+                    textBuffer.Append((char)b);
 
-                    while (true)
+                    if (!foundHeaderStart)
                     {
-                        int result = serialPort.ReadByte();
-                        byte b = (byte)result;
+                        string currentText = textBuffer.ToString();
 
-                        byteBuffer.Enqueue(b);
-                        textBuffer.Append((char)b);
-
-                        if (!foundHeaderStart)
+                        if (currentText.Contains("START\r\n"))
                         {
-                            string currentText = textBuffer.ToString();
+                            foundHeaderStart = true;
 
-                            if (currentText.Contains("START\r\n"))
-                            {
-                                foundHeaderStart = true;
+                            int headerEndIndex = currentText.IndexOf("START\r\n") + "START\r\n".Length;
 
-                                int headerEndIndex = currentText.IndexOf("START\r\n") + "START\r\n".Length;
+                            int skipCount = Encoding.ASCII.GetByteCount(currentText[..headerEndIndex]);
 
-                                int skipCount = Encoding.ASCII.GetByteCount(currentText[..headerEndIndex]);
-
-                                for (int i = 0; i < skipCount; i++)
-                                    byteBuffer.Dequeue();
-                            }
-
-                            continue;
+                            for (int i = 0; i < skipCount; i++)
+                                byteBuffer.Dequeue();
                         }
 
-                        readResult.Add(b);
-
-                        Thread.Sleep(10);
+                        continue;
                     }
 
-                }
-                catch (TimeoutException)
-                {
-                }
-                catch (IOException ex)
-                {
-                    Console.WriteLine("IO błąd: " + ex.Message);
+                    readResult.Add(b);
+
+                    Thread.Sleep(10);
                 }
             }
+
+
+            catch (TimeoutException)
+            {
+            }
+            catch (IOException ex)
+            {
+                Console.WriteLine("IO błąd: " + ex.Message);
+            }
+
 
             return removeSuffix(readResult);
         }
