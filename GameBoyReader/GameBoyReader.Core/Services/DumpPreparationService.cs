@@ -14,6 +14,7 @@ namespace GameBoyReader.Core.Services
             try
             {
                 arduinoClient.startConnection(comPort);
+                Thread.Sleep(500);
                 information.Name = Encoding.ASCII.GetString(arduinoClient.RetrieveBytes("GET_TITLE").ToArray());
                 information.Type = CartridgeTypeConverter.ConvertFromByte(arduinoClient.RetrieveBytes("GET_MBC").First());
                 information.ROMSize = arduinoClient.RetrieveBytes("GET_ROM_SIZE").First();
@@ -34,6 +35,7 @@ namespace GameBoyReader.Core.Services
             try
             {
                 arduinoClient.startConnection(comPort);
+                Thread.Sleep(500);
                 bitmap = arduinoClient.RetrieveBytes("GET_HEADER");
                 arduinoClient.stopConnection(comPort);
 
