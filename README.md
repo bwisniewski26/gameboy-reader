@@ -16,4 +16,4 @@
 
 ## Requirements
 
-`reader_companion.py` requires Python 3 installed along with PySerial package.
+TODO
