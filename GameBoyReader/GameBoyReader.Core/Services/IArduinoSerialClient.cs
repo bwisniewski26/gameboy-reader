@@ -6,8 +6,6 @@ namespace GameBoyReader.Core.Services
     public interface IArduinoSerialClient
     {
         public string[] RetrieveAvailableCOMPorts();
-        public List<Byte> RetrieveBytes(string readerCommand);
-        public void startConnection(string comPort);
-        public void stopConnection(string comPort);
+        public Task<List<Byte>> RetrieveBytes(string readerCommand);
     }
 }

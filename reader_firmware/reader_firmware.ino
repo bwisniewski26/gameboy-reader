@@ -59,24 +59,25 @@ uint8_t readByte(uint16_t address)
 
 void dumpROM(uint32_t size, uint32_t startAddress = 0)
 {
-    Serial.println("START"); // Start marker
+    Serial.println("START"); 
     Serial.flush();
 
     for (uint32_t addr = startAddress; addr < size; addr++)
     {
         uint8_t data = readByte(addr);
-        Serial.write(data); // Send raw bytes
+        Serial.write(data); 
         if (addr % 4096 == 0)
         {
           kB_dumped += 4;
+            lcd.clear();
             lcd.setCursor(0,0);
             lcd.print("Progress:");
             lcd.setCursor(0,1);
             lcd.print(kB_dumped);
             lcd.setCursor(4,1);
             lcd.print("KB");
-            digitalWrite(LED_PIN, !digitalRead(LED_PIN)); // Toggle LED every 4 KB to indicate progress
-            Serial.flush();                               // Mitigate buffer overflow
+            digitalWrite(LED_PIN, !digitalRead(LED_PIN)); 
+            Serial.flush();                               
         }
     }
 
@@ -86,6 +87,7 @@ void dumpROM(uint32_t size, uint32_t startAddress = 0)
 
 void dumpHeader() {
     lcd.setCursor(0,0);
+    lcd.clear();
     lcd.print("Sending HEADER");
 
     Serial.println("START");
@@ -95,6 +97,7 @@ void dumpHeader() {
         uint8_t value = readByte(addr);
         Serial.write(value);
     }
+    Serial.flush();
     Serial.println("END");
 }
 
@@ -102,6 +105,7 @@ void dumpHeader() {
 void dumpMBCType()
 {
     lcd.setCursor(0,0);
+    lcd.clear();
     lcd.print("Sending MBC");
     Serial.println("START");
     uint8_t value = getMBCType();
@@ -112,6 +116,7 @@ void dumpMBCType()
 void dumpROMSize()
 {
     lcd.setCursor(0,0);
+    lcd.clear();
     lcd.print("Sending ROM size");
     Serial.println("START");
     uint8_t value = getROMSize();
@@ -122,6 +127,7 @@ void dumpROMSize()
 void dumpRAMSize()
 {
     lcd.setCursor(0,0);
+    lcd.clear();
     lcd.print("Sending RAM size");
     Serial.println("START");
     uint8_t value = getRAMSize();
@@ -132,6 +138,7 @@ void dumpRAMSize()
 void dumpTitle()
 {
     lcd.setCursor(0, 0);
+    lcd.clear();
     lcd.print("Sending TITLE");
     Serial.println("START");
 
@@ -178,6 +185,16 @@ uint8_t getRAMSize()
   return value;
 }
 
+uint32_t calculateROMAddressCount()
+{
+  uint8_t value = readByte(0x0148);
+  lcd.clear();
+  lcd.print(value);
+  lcd.setCursor(0, 1);
+  uint32_t romSize = 32 * 1024 * (1u << (uint32_t)value);
+  return romSize;
+}
+
 void loop()
 {
 
@@ -187,27 +204,39 @@ void loop()
       if (command == "GET_HEADER") {
           dumpHeader();
       }
-      if (command == "GET_MBC")
+      else if (command == "GET_MBC")
       {
         dumpMBCType();
       }
-      if (command == "GET_ROM_SIZE")
+      else if (command == "GET_ROM_SIZE")
       {
         dumpROMSize();
       }
-      if (command == "GET_RAM_SIZE")
+      else if (command == "GET_RAM_SIZE")
       {
         dumpRAMSize();
       }
-      if (command == "GET_TITLE")
+      else if (command == "GET_TITLE")
       {
         dumpTitle();
       }
-      if (command == "DUMP_ROM") {
+      else if (command == "DUMP_MBC0")
+      {
+        digitalWrite(LED_PIN, HIGH);
+        delay(500);
+        digitalWrite(LED_PIN, LOW);
+        uint32_t romSize = calculateROMAddressCount();
+        dumpROM(romSize);
+      }
+      else if (command == "DUMP_ROM") {
         digitalWrite(LED_PIN, HIGH);
         delay(500);
         digitalWrite(LED_PIN, LOW);
         dumpROM(0x8000); // 32 KB dla Tetrisa
+      } else {
+        lcd.setCursor(0, 0);
+        lcd.clear();
+        lcd.print("Unknown command");
       }
     } 
 }

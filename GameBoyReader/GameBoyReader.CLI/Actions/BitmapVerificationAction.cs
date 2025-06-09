@@ -9,11 +9,20 @@ namespace GameBoyReader.CLI.Actions
 {
     public static class BitmapVerificationAction
     {
-        private static DumpPreparationService cartridgeService = new();
-        public static bool VerifyBitmap()
+        private static CartridgePreparationService cartridgeService = new();
+        public async static Task VerifyBitmap()
         {
             string comPort = COMPortPicker.TerminalCOMPortPicker();
-            return cartridgeService.ValidateBootBitmap(comPort);
+            bool result = await cartridgeService.ValidateBootBitmap(comPort);
+            Console.WriteLine("");
+            if (result)
+            {
+                Console.WriteLine("Boot bitmap was verified successfully. This means that cartridge is a correct GameBoy cartridge.");
+            }
+            else
+            {
+                Console.WriteLine("Received boot bitmap was incorrect.");
+            }
         }
 
     }

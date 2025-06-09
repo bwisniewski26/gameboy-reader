@@ -1,0 +1,85 @@
+﻿using GameBoyReader.Core.Models;
+using GameBoyReader.Core.States;
+using GameBoyReader.Core.Utils;
+using System.Text;
+
+namespace GameBoyReader.Core.Services
+{
+    public class CartridgePreparationService : ICartridgePreparationService
+    {
+
+        private ArduinoSerialClient arduinoClient = new();
+        public async Task<CartridgeInformation> RetrieveCartridgeInformation(string comPort)
+        {
+            CartridgeInformation information = new();
+            try
+            {
+
+                if (!ConnectionStatus.IsConnectionEstablished)
+                {
+                    await ConnectionStatus.StartConnection(comPort);
+                    await Task.Delay(500);
+                }
+
+
+                var titleBytes = await arduinoClient.RetrieveBytes("GET_TITLE");
+                information.Name = Encoding.ASCII.GetString(titleBytes.ToArray());
+
+                var mbcBytes = await arduinoClient.RetrieveBytes("GET_MBC");
+                information.Type = CartridgeTypeConverter.ConvertFromByte(mbcBytes.First());
+
+                var romSizeBytes = await arduinoClient.RetrieveBytes("GET_ROM_SIZE");
+                information.ROMSize = romSizeBytes.First();
+
+                var ramSizeBytes = await arduinoClient.RetrieveBytes("GET_RAM_SIZE");
+                information.RAMSize = ramSizeBytes.First();
+
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("An error occured. Received data may be incorrect. Error details:");
+                Console.WriteLine(e);
+            }
+            return information;
+        }
+
+        public async Task<bool> ValidateBootBitmap(string comPort)
+        {
+            List<byte> bitmap = new();
+            try
+            {
+                if (!ConnectionStatus.IsConnectionEstablished)
+                {
+                    await ConnectionStatus.StartConnection(comPort);
+                    await Task.Delay(500);
+                    Console.WriteLine(ConnectionStatus.IsConnectionEstablished);
+                    bitmap = await arduinoClient.RetrieveBytes("GET_HEADER");
+                }
+                else
+                {
+
+                    bitmap = await arduinoClient.RetrieveBytes("GET_HEADER");
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("An error occured. Received data may be incorrect. Error details:");
+                Console.WriteLine(e);
+            }
+
+            Console.WriteLine("Received data:");
+            foreach (var bit in bitmap)
+            {
+                Console.Write(bit);
+            }
+            Console.WriteLine("\nExpected data:");
+            foreach (var bit in CartridgeValidationBootBitmap.bootBitmap)
+            {
+                Console.Write(bit);
+            }
+
+            return bitmap.SequenceEqual(CartridgeValidationBootBitmap.bootBitmap);
+        }
+
+    }
+}

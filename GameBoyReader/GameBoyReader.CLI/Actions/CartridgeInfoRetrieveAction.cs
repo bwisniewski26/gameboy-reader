@@ -10,19 +10,19 @@ using System.Threading.Tasks;
 namespace GameBoyReader.CLI.Actions
 {
 
-    public class CartridgeInfoRetrieve
+    public class CartridgeInfoRetrieveAction
     {
-        private static DumpPreparationService cartridgeService = new();
-        public static void DisplayCartridgeInfo()
+        private static CartridgePreparationService cartridgeService = new();
+        public async static Task DisplayCartridgeInfo()
         {
             string comPort = COMPortPicker.TerminalCOMPortPicker();
-            CartridgeInformation information = cartridgeService.RetrieveCartridgeInformation(comPort);
+            CartridgeInformation information = await cartridgeService.RetrieveCartridgeInformation(comPort);
 
             Console.Clear();
 
             Console.WriteLine($"Game title: {information.Name}");
             Console.WriteLine($"Cartridge type: {CartridgeTypeConverter.ConvertFromCartridgeTypeToString(information.Type)}");
-            Console.WriteLine($"ROM Size: {information.ROMSize}");
+            Console.WriteLine($"ROM Size: {32 * 1024 * ( 1 << information.ROMSize)}KB");
             Console.WriteLine($"RAM Size: {information.RAMSize}");
         }
     }
