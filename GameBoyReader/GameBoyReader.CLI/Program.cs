@@ -9,7 +9,7 @@ namespace GameBoyReader.CLI
     {
         static async Task Main(string[] args)
         {
-            string[] options = { "Check boot bitmap", "Check cartridge header", "Dump cartridge", "Exit" };
+            string[] options = { "Choose COM port", "Check boot bitmap", "Check cartridge header", "Dump cartridge", "Exit" };
             int selectedIndex = 0;
             AppDomain.CurrentDomain.ProcessExit += OnProcessExit;
 
@@ -19,6 +19,51 @@ namespace GameBoyReader.CLI
                 OnProcessExit(sender, eventArgs);
             };
 
+            while (true)
+            {
+                selectedIndex = TerminalPicker();
+                Console.Clear();
+                switch (selectedIndex)
+                {
+                    case 0:
+                        COMPortPicker.TerminalCOMPortPicker();
+                        break;
+                    case 1:
+                        await BitmapVerificationAction.VerifyBitmap();
+                        Console.WriteLine("Press any button to return.");
+                        Console.ReadKey();
+                        break;
+                    case 2:
+                        await CartridgeInfoRetrieveAction.DisplayCartridgeInfo();
+                        Console.WriteLine("Press any button to return.");
+                        Console.ReadKey();
+                        break;
+                    case 3:
+                        await DumpCartridgeAction.DumpCartridge();
+                        Console.WriteLine("Press any button to return.");
+                        Console.ReadKey();
+                        break;
+                    case 4:
+                        return;
+                }
+            }
+
+        }
+
+        static void OnProcessExit(object? sender, EventArgs e)
+        {
+            Console.WriteLine("Exiting GameBoy Reader...");
+            if (ConnectionStatus.SerialPort != null)
+            {
+                Console.WriteLine("Closing port...");
+                ConnectionStatus.SerialPort.Close();
+            }
+        }
+
+        static int TerminalPicker()
+        {
+            string[] options = { "Choose COM port", "Check boot bitmap", "Check cartridge header", "Dump cartridge", "Exit" };
+            int selectedIndex = 0;
             while (true)
             {
                 ConsoleKey key;
@@ -31,6 +76,7 @@ namespace GameBoyReader.CLI
                     Console.Clear();
                     Console.SetCursorPosition(x, 0);
                     Console.WriteLine(title);
+                    Console.WriteLine($"Is COM connection establised: {ConnectionStatus.IsConnectionEstablished}");
                     for (int i = 0; i < options.Length; i++)
                     {
                         if (i == selectedIndex)
@@ -65,38 +111,7 @@ namespace GameBoyReader.CLI
 
                 } while (key != ConsoleKey.Enter);
 
-                Console.Clear();
-                switch (selectedIndex)
-                {
-                    case 0:
-                        await BitmapVerificationAction.VerifyBitmap();
-                        Console.WriteLine("Press any button to return.");
-                        Console.ReadKey();
-                        break;
-                    case 1:
-                        await CartridgeInfoRetrieveAction.DisplayCartridgeInfo();
-                        Console.WriteLine("Press any button to return.");
-                        Console.ReadKey();
-                        break;
-                    case 2:
-                        await DumpCartridgeAction.DumpCartridge();
-                        Console.WriteLine("Press any button to return.");
-                        Console.ReadKey();
-                        break;
-                    case 3:
-                        return;
-                }
-            }
-
-        }
-
-        static void OnProcessExit(object? sender, EventArgs e)
-        {
-            Console.WriteLine("Exiting GameBoy Reader...");
-            if (ConnectionStatus.SerialPort != null)
-            {
-                Console.WriteLine("Closing port...");
-                ConnectionStatus.SerialPort.Close();
+                return selectedIndex;
             }
         }
     }

@@ -4,8 +4,8 @@ namespace GameBoyReader.Core.Services
 {
     public interface ICartridgePreparationService
     {
-        public Task<bool> ValidateBootBitmap(string comPort);
-        public Task<CartridgeInformation> RetrieveCartridgeInformation(string comPort);
+        public Task<RetrievedBitmap> ValidateBootBitmap(string? comPort = null);
+        public Task<CartridgeInformation> RetrieveCartridgeInformation(string? comPort = null);
         
     }
 }

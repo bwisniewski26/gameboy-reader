@@ -10,6 +10,6 @@ namespace GameBoyReader.Core.Services
 {
     public interface ICartridgeDumperService
     {
-        public Task<CartridgeContent> DumpCartridge(string comPort);
+        public Task<CartridgeContent> DumpCartridge(string? comPort = null);
     }
 }

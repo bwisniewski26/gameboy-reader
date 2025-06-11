@@ -8,6 +8,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using GameBoyReader.Core.States;
 
 namespace GameBoyReader.CLI.Actions
 {
@@ -16,8 +17,12 @@ namespace GameBoyReader.CLI.Actions
         private static CartridgeDumperService dumperService = new();
         public static async Task DumpCartridge()
         {
-            string comPort = COMPortPicker.TerminalCOMPortPicker();
-            CartridgeContent content = await dumperService.DumpCartridge(comPort);
+            if (!ConnectionStatus.IsConnectionEstablished)
+            {
+                COMPortPicker.TerminalCOMPortPicker();
+            }
+
+            CartridgeContent content = await dumperService.DumpCartridge();
 
 
             Console.Clear();

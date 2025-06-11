@@ -1,4 +1,6 @@
-﻿using GameBoyReader.Core.Services;
+﻿using GameBoyReader.Core.Models;
+using GameBoyReader.Core.Services;
+using GameBoyReader.Core.States;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,10 +14,23 @@ namespace GameBoyReader.CLI.Actions
         private static CartridgePreparationService cartridgeService = new();
         public async static Task VerifyBitmap()
         {
-            string comPort = COMPortPicker.TerminalCOMPortPicker();
-            bool result = await cartridgeService.ValidateBootBitmap(comPort);
+            if (!ConnectionStatus.IsConnectionEstablished)
+            {
+                COMPortPicker.TerminalCOMPortPicker();
+            }
+            RetrievedBitmap result = await cartridgeService.ValidateBootBitmap();
             Console.WriteLine("");
-            if (result)
+            Console.WriteLine("Received data:");
+            foreach (var bit in result.Bitmap)
+            {
+                Console.Write(bit);
+            }
+            Console.WriteLine("\nExpected data:");
+            foreach (var bit in CartridgeValidationBitmap.bootBitmap)
+            {
+                Console.Write(bit);
+            }
+            if (result.IsBitmapCorrect)
             {
                 Console.WriteLine("Boot bitmap was verified successfully. This means that cartridge is a correct GameBoy cartridge.");
             }
