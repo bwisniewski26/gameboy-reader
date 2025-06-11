@@ -32,6 +32,12 @@ void setup()
     DDRA = 0xFF; 
     DDRC = 0xFF;
 
+    digitalWrite(RST_PIN, LOW);
+    delay(50);
+    digitalWrite(RST_PIN, HIGH);
+    delay(50);
+
+
     digitalWrite(RD_PIN, HIGH);
     digitalWrite(WR_PIN, HIGH);
     digitalWrite(CS_PIN, HIGH);
@@ -51,7 +57,7 @@ uint8_t readByte(uint16_t address)
     setAddress(address);
     digitalWrite(CS_PIN, LOW);
     digitalWrite(RD_PIN, LOW);
-    delayMicroseconds(100);
+    delayMicroseconds(15);
     byte data = PINL;
     digitalWrite(RD_PIN, HIGH);
     digitalWrite(CS_PIN, HIGH);
@@ -66,7 +72,7 @@ void writeByte(uint8_t data, uint16_t address)
 
   DDRL = 0xFF;       
   PORTL = data;      
-  delayMicroseconds(100);
+  delayMicroseconds(15);
 
   digitalWrite(RD_PIN, LOW);
   digitalWrite(WR_PIN, HIGH);
@@ -86,9 +92,9 @@ void dumpROM(uint32_t size, uint32_t startAddress = 0, uint8_t isMBC0 = 0)
     {
         uint8_t data = readByte(addr);
         Serial.write(data); 
-        if (addr % 1024 == 0)
+        if (addr % 2048 == 0)
         {
-          kB_dumped++;
+          kB_dumped += 2;
             lcd.clear();
             lcd.setCursor(0,0);
             lcd.print("Progress:");
@@ -211,9 +217,31 @@ uint8_t getRAMSize()
 uint32_t calculateROMAddressCount()
 {
   uint8_t value = readByte(0x0148);
-  uint32_t romSize = (uint32_t)32 * (uint32_t)1024 * (uint32_t)(1u << value);
+
+  uint32_t romSize = 0;
+
+  switch (value)
+  {
+    case 0: romSize = (uint32_t)32 * (uint32_t)1024; break;
+    case 1: romSize = (uint32_t)64 * (uint32_t)1024; break;
+    case 2: romSize = (uint32_t)128 * (uint32_t)1024; break;
+    case 3: romSize = (uint32_t)256 * (uint32_t)1024; break;
+    case 4: romSize = (uint32_t)512 * (uint32_t)1024; break;
+    case 5: romSize = (uint32_t)1024 * (uint32_t)1024; break;
+    case 6: romSize = (uint32_t)2 * (uint32_t)1024 * (uint32_t)1024; break;
+    case 7: romSize = (uint32_t)4 * (uint32_t)1024 * (uint32_t)1024; break;
+    case 8: romSize = (uint32_t)8 * (uint32_t)1024 * (uint32_t)1024; break;
+    case 0x52: romSize = (uint32_t)1152 * (uint32_t)1024; break;
+    case 0x53: romSize = (uint32_t)1280 * (uint32_t)1024; break;
+    case 0x54: romSize = (uint32_t)1536 * (uint32_t)1024; break;
+    default:
+      romSize = 0;
+  }
+
   return romSize;
 }
+
+
 
 void dumpMBC0()
 {
@@ -234,7 +262,7 @@ void dumpMBC1()
       switchMBC1Bank(bankNumber);
       dumpROM(0x4000, 0x4000, 0);
   }
-  Serial.println("END"); // End marker
+  Serial.println("END");
   Serial.flush();
 }
 
@@ -244,9 +272,61 @@ void switchMBC1Bank(uint8_t bankNumber)
     if (bank == 0) bank = 1;
 
     writeByte(bank, 0x2000);
+    delay(5);
 }
 
 
+void dumpMBC2()
+{
+  uint32_t romSize = calculateROMAddressCount();
+  uint32_t bankCount = (romSize / 16384);
+  Serial.println("START"); 
+  Serial.flush();
+  kB_dumped = 0;
+  dumpROM(0x4000, 0, 0);
+  for (int bankNumber = 1; bankNumber < bankCount; bankNumber++)
+  {
+      switchMBC2Bank(bankNumber);
+      dumpROM(0x4000, 0x4000, 0);
+  }
+  Serial.println("END"); // End marker
+  Serial.flush();
+}
+
+void switchMBC2Bank(uint8_t bankNumber)
+{
+    uint8_t bank = bankNumber & 0x1F;
+    if (bank == 0) bank = 1;
+
+    writeByte(bank, 0x2100);
+    delay(5);
+
+}
+
+void dumpMBC3()
+{
+  uint32_t romSize = calculateROMAddressCount();
+  uint32_t bankCount = (romSize / 16384);
+  Serial.println("START"); 
+  Serial.flush();
+  kB_dumped = 0;
+  dumpROM(0x4000, 0, 0);
+  for (int bankNumber = 1; bankNumber < bankCount; bankNumber++)
+  {
+      switchMBC3Bank(bankNumber);
+      dumpROM(0x4000, 0x4000, 0);
+  }
+  Serial.println("END");
+  Serial.flush();
+}
+
+void switchMBC3Bank(uint8_t bankNumber)
+{
+    if (bankNumber == 0) bankNumber = 1;
+
+    writeByte(bankNumber, 0x2000);
+    delay(5);
+}
 
 void loop()
 {
@@ -292,6 +372,25 @@ void loop()
         lcd.clear();
         lcd.print("MBC1 Cart dump");
         dumpMBC1();
+      } else if (command == "DUMP_MBC2")
+      {
+        digitalWrite(LED_PIN, HIGH);
+        delay(500);
+        digitalWrite(LED_PIN, LOW);
+        lcd.setCursor(0, 0);
+        lcd.clear();
+        lcd.print("MBC2 Cart dump");
+        dumpMBC2();
+      }
+      else if (command == "DUMP_MBC3")
+      {
+        digitalWrite(LED_PIN, HIGH);
+        delay(500);
+        digitalWrite(LED_PIN, LOW);
+        lcd.setCursor(0, 0);
+        lcd.clear();
+        lcd.print("MBC2 Cart dump");
+        dumpMBC3();
       }
       else {
         lcd.setCursor(0, 0);

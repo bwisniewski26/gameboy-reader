@@ -21,9 +21,54 @@ namespace GameBoyReader.CLI
 
             while (true)
             {
+                selectedIndex = TerminalPicker();
+                Console.Clear();
+                switch (selectedIndex)
+                {
+                    case 0:
+                        COMPortPicker.TerminalCOMPortPicker();
+                        break;
+                    case 1:
+                        await BitmapVerificationAction.VerifyBitmap();
+                        Console.WriteLine("Press any button to return.");
+                        Console.ReadKey();
+                        break;
+                    case 2:
+                        await CartridgeInfoRetrieveAction.DisplayCartridgeInfo();
+                        Console.WriteLine("Press any button to return.");
+                        Console.ReadKey();
+                        break;
+                    case 3:
+                        await DumpCartridgeAction.DumpCartridge();
+                        Console.WriteLine("Press any button to return.");
+                        Console.ReadKey();
+                        break;
+                    case 4:
+                        return;
+                }
+            }
+
+        }
+
+        static void OnProcessExit(object? sender, EventArgs e)
+        {
+            Console.WriteLine("Exiting GameBoy Reader...");
+            if (ConnectionStatus.SerialPort != null)
+            {
+                Console.WriteLine("Closing port...");
+                ConnectionStatus.SerialPort.Close();
+            }
+        }
+
+        static int TerminalPicker()
+        {
+            string[] options = { "Choose COM port", "Check boot bitmap", "Check cartridge header", "Dump cartridge", "Exit" };
+            int selectedIndex = 0;
+            while (true)
+            {
                 ConsoleKey key;
                 string title = "GameBoy Reader CLI";
-               
+
                 do
                 {
                     int windowWidth = Console.WindowWidth;
@@ -66,41 +111,7 @@ namespace GameBoyReader.CLI
 
                 } while (key != ConsoleKey.Enter);
 
-                Console.Clear();
-                switch (selectedIndex)
-                {
-                    case 0:
-                        COMPortPicker.TerminalCOMPortPicker();
-                        break;
-                    case 1:
-                        await BitmapVerificationAction.VerifyBitmap();
-                        Console.WriteLine("Press any button to return.");
-                        Console.ReadKey();
-                        break;
-                    case 2:
-                        await CartridgeInfoRetrieveAction.DisplayCartridgeInfo();
-                        Console.WriteLine("Press any button to return.");
-                        Console.ReadKey();
-                        break;
-                    case 3:
-                        await DumpCartridgeAction.DumpCartridge();
-                        Console.WriteLine("Press any button to return.");
-                        Console.ReadKey();
-                        break;
-                    case 4:
-                        return;
-                }
-            }
-
-        }
-
-        static void OnProcessExit(object? sender, EventArgs e)
-        {
-            Console.WriteLine("Exiting GameBoy Reader...");
-            if (ConnectionStatus.SerialPort != null)
-            {
-                Console.WriteLine("Closing port...");
-                ConnectionStatus.SerialPort.Close();
+                return selectedIndex;
             }
         }
     }
