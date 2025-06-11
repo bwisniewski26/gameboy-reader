@@ -9,7 +9,7 @@ namespace GameBoyReader.CLI
     {
         static async Task Main(string[] args)
         {
-            string[] options = { "Check boot bitmap", "Check cartridge header", "Dump cartridge", "Exit" };
+            string[] options = { "Choose COM port", "Check boot bitmap", "Check cartridge header", "Dump cartridge", "Exit" };
             int selectedIndex = 0;
             AppDomain.CurrentDomain.ProcessExit += OnProcessExit;
 
@@ -23,7 +23,7 @@ namespace GameBoyReader.CLI
             {
                 ConsoleKey key;
                 string title = "GameBoy Reader CLI";
-
+               
                 do
                 {
                     int windowWidth = Console.WindowWidth;
@@ -31,6 +31,7 @@ namespace GameBoyReader.CLI
                     Console.Clear();
                     Console.SetCursorPosition(x, 0);
                     Console.WriteLine(title);
+                    Console.WriteLine($"Is COM connection establised: {ConnectionStatus.IsConnectionEstablished}");
                     for (int i = 0; i < options.Length; i++)
                     {
                         if (i == selectedIndex)
@@ -69,21 +70,24 @@ namespace GameBoyReader.CLI
                 switch (selectedIndex)
                 {
                     case 0:
+                        COMPortPicker.TerminalCOMPortPicker();
+                        break;
+                    case 1:
                         await BitmapVerificationAction.VerifyBitmap();
                         Console.WriteLine("Press any button to return.");
                         Console.ReadKey();
                         break;
-                    case 1:
+                    case 2:
                         await CartridgeInfoRetrieveAction.DisplayCartridgeInfo();
                         Console.WriteLine("Press any button to return.");
                         Console.ReadKey();
                         break;
-                    case 2:
+                    case 3:
                         await DumpCartridgeAction.DumpCartridge();
                         Console.WriteLine("Press any button to return.");
                         Console.ReadKey();
                         break;
-                    case 3:
+                    case 4:
                         return;
                 }
             }

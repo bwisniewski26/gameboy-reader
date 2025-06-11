@@ -1,4 +1,5 @@
 ﻿using GameBoyReader.Core.Enums;
+using GameBoyReader.Core.Exceptions;
 using GameBoyReader.Core.Models;
 using GameBoyReader.Core.States;
 
@@ -8,7 +9,7 @@ namespace GameBoyReader.Core.Services
     {
         private ArduinoSerialClient _serialClient = new();
         private CartridgePreparationService _preparationService = new();
-        public async Task<CartridgeContent> DumpCartridge(string comPort)
+        public async Task<CartridgeContent> DumpCartridge(string? comPort = null)
         {
             CartridgeInformation information = new CartridgeInformation();
             CartridgeContent cartridgeContent = new CartridgeContent();
@@ -17,6 +18,10 @@ namespace GameBoyReader.Core.Services
             {
                 if (!ConnectionStatus.IsConnectionEstablished)
                 {
+                    if (comPort == null)
+                    {
+                        throw new SerialConnectionException();
+                    }
                     await ConnectionStatus.StartConnection(comPort);
                     await Task.Delay(500);
                 }
@@ -24,13 +29,13 @@ namespace GameBoyReader.Core.Services
                 switch (cartridgeContent.CartridgeInformation.Type)
                 {
                     case CartridgeType.MBC0:
-                        Console.WriteLine("0");
                         cartridgeContent.CartridgeByteContent = await _serialClient.RetrieveBytes("DUMP_MBC0");
                         break;
-                    default:
-                        Console.WriteLine("1");
-                        cartridgeContent.CartridgeByteContent = await _serialClient.RetrieveBytes("DUMP_MBC");
+                    case CartridgeType.MBC1:
+                        cartridgeContent.CartridgeByteContent = await _serialClient.RetrieveBytes("DUMP_MBC1");
                         break;
+                    default:
+                        throw new CartridgeNotSupportedException();
                 }
             }
             catch (Exception e)

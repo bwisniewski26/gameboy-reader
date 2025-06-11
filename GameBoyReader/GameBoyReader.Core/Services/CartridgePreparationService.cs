@@ -1,4 +1,5 @@
-﻿using GameBoyReader.Core.Models;
+﻿using GameBoyReader.Core.Exceptions;
+using GameBoyReader.Core.Models;
 using GameBoyReader.Core.States;
 using GameBoyReader.Core.Utils;
 using System.Text;
@@ -9,7 +10,7 @@ namespace GameBoyReader.Core.Services
     {
 
         private ArduinoSerialClient arduinoClient = new();
-        public async Task<CartridgeInformation> RetrieveCartridgeInformation(string comPort)
+        public async Task<CartridgeInformation> RetrieveCartridgeInformation(string? comPort = null)
         {
             CartridgeInformation information = new();
             try
@@ -17,10 +18,13 @@ namespace GameBoyReader.Core.Services
 
                 if (!ConnectionStatus.IsConnectionEstablished)
                 {
+                    if (comPort == null)
+                    {
+                        throw new SerialConnectionException();
+                    }
                     await ConnectionStatus.StartConnection(comPort);
                     await Task.Delay(500);
                 }
-
 
                 var titleBytes = await arduinoClient.RetrieveBytes("GET_TITLE");
                 information.Name = Encoding.ASCII.GetString(titleBytes.ToArray());
@@ -43,42 +47,30 @@ namespace GameBoyReader.Core.Services
             return information;
         }
 
-        public async Task<bool> ValidateBootBitmap(string comPort)
+        public async Task<RetrievedBitmap> ValidateBootBitmap(string? comPort = null)
         {
-            List<byte> bitmap = new();
+            RetrievedBitmap retrievedBitmap = new();
             try
             {
                 if (!ConnectionStatus.IsConnectionEstablished)
                 {
+                    if (comPort == null)
+                    {
+                        throw new SerialConnectionException();
+                    }
                     await ConnectionStatus.StartConnection(comPort);
                     await Task.Delay(500);
-                    Console.WriteLine(ConnectionStatus.IsConnectionEstablished);
-                    bitmap = await arduinoClient.RetrieveBytes("GET_HEADER");
                 }
-                else
-                {
-
-                    bitmap = await arduinoClient.RetrieveBytes("GET_HEADER");
-                }
+                retrievedBitmap.Bitmap = await arduinoClient.RetrieveBytes("GET_HEADER");
             }
             catch (Exception e)
             {
                 Console.WriteLine("An error occured. Received data may be incorrect. Error details:");
                 Console.WriteLine(e);
             }
+            retrievedBitmap.IsBitmapCorrect = retrievedBitmap.Bitmap.SequenceEqual(CartridgeValidationBitmap.bootBitmap);
 
-            Console.WriteLine("Received data:");
-            foreach (var bit in bitmap)
-            {
-                Console.Write(bit);
-            }
-            Console.WriteLine("\nExpected data:");
-            foreach (var bit in CartridgeValidationBootBitmap.bootBitmap)
-            {
-                Console.Write(bit);
-            }
-
-            return bitmap.SequenceEqual(CartridgeValidationBootBitmap.bootBitmap);
+            return retrievedBitmap;
         }
 
     }

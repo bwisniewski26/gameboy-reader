@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace GameBoyReader.Core.Models
 {
-    public static class CartridgeValidationBootBitmap
+    public static class CartridgeValidationBitmap
     {
         public static Byte[] bootBitmap = {
             206, 237, 102, 102, 204, 13, 0, 11,

@@ -1,6 +1,8 @@
 ﻿using GameBoyReader.Core.Services;
+using GameBoyReader.Core.States;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -10,7 +12,7 @@ namespace GameBoyReader.CLI.Actions
     public static class COMPortPicker
     {
         private static ArduinoSerialClient arduinoClient = new();
-        public static string TerminalCOMPortPicker()
+        public static void TerminalCOMPortPicker()
         {
             string[] options = arduinoClient.RetrieveAvailableCOMPorts();
             int selectedIndex = 0;
@@ -62,7 +64,16 @@ namespace GameBoyReader.CLI.Actions
                 } while (key != ConsoleKey.Enter);
 
                 Console.Clear();
-                return options[selectedIndex];
+                try
+                {
+                    ConnectionStatus.StartConnection(options[selectedIndex]);
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine("COM connection was unsuccessful:");
+                    Console.WriteLine(e.Message);
+                }
+                return;
             }
         }
     }
