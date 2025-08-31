@@ -6,6 +6,8 @@ namespace GameBoyReader.Core.Services
     {
         public Task<RetrievedBitmap> ValidateBootBitmap(string? comPort = null);
         public Task<CartridgeInformation> RetrieveCartridgeInformation(string? comPort = null);
+
+        public Task<int> RetrieveRAMSize();
         
     }
 }

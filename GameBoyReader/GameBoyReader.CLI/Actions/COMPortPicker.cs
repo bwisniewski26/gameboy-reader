@@ -12,9 +12,10 @@ namespace GameBoyReader.CLI.Actions
     public static class COMPortPicker
     {
         private static ArduinoSerialClient arduinoClient = new();
-        public static void TerminalCOMPortPicker()
+        public static async void TerminalCOMPortPicker()
         {
-            string[] options = arduinoClient.RetrieveAvailableCOMPorts();
+            var options = arduinoClient.RetrieveAvailableCOMPorts();
+            options.Add("Back");
             int selectedIndex = 0;
             while (true)
             {
@@ -29,7 +30,7 @@ namespace GameBoyReader.CLI.Actions
                     Console.Clear();
                     Console.SetCursorPosition(x, 0);
                     Console.WriteLine(title);
-                    for (int i = 0; i < options.Length; i++)
+                    for (int i = 0; i < options.Count; i++)
                     {
                         if (i == selectedIndex)
                         {
@@ -52,26 +53,29 @@ namespace GameBoyReader.CLI.Actions
                     {
                         selectedIndex--;
                         if (selectedIndex < 0)
-                            selectedIndex = options.Length - 1;
+                            selectedIndex = options.Count - 1;
                     }
                     else if (key == ConsoleKey.DownArrow)
                     {
                         selectedIndex++;
-                        if (selectedIndex >= options.Length)
+                        if (selectedIndex >= options.Count)
                             selectedIndex = 0;
                     }
 
                 } while (key != ConsoleKey.Enter);
 
                 Console.Clear();
-                try
+                if (selectedIndex != options.Count - 1)
                 {
-                    ConnectionStatus.StartConnection(options[selectedIndex]);
-                }
-                catch (Exception e)
-                {
-                    Console.WriteLine("COM connection was unsuccessful:");
-                    Console.WriteLine(e.Message);
+                    try
+                    {
+                        await ConnectionStatus.StartConnection(options[selectedIndex]);
+                    }
+                    catch (Exception e)
+                    {
+                        Console.WriteLine("COM connection was unsuccessful:");
+                        Console.WriteLine(e.Message);
+                    }
                 }
                 return;
             }

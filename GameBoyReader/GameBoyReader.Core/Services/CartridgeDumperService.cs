@@ -11,7 +11,6 @@ namespace GameBoyReader.Core.Services
         private CartridgePreparationService _preparationService = new();
         public async Task<CartridgeContent> DumpCartridge(string? comPort = null)
         {
-            CartridgeInformation information = new CartridgeInformation();
             CartridgeContent cartridgeContent = new CartridgeContent();
 
             try
@@ -58,6 +57,54 @@ namespace GameBoyReader.Core.Services
             }
 
             return cartridgeContent;
+        }
+
+        public async Task<CartridgeRAMContent> DumpCartridgeRAM(string? comPort = null)
+        {
+            CartridgeRAMContent cartridgeRAMContent = new CartridgeRAMContent();
+
+            try
+            {
+                if (!ConnectionStatus.IsConnectionEstablished)
+                {
+                    if (comPort == null)
+                    {
+                        throw new SerialConnectionException();
+                    }
+                    await ConnectionStatus.StartConnection(comPort);
+                    await Task.Delay(500);
+                }
+                cartridgeRAMContent.CartridgeRAMByteContent = await _serialClient.RetrieveBytes("DUMP_RAM");
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("An error occured. Received data may be incorrect. Error details:");
+                Console.WriteLine(e);
+            }
+
+            return cartridgeRAMContent;
+        }
+
+        public async Task WriteCartridgeRAM(byte[] bytes, string? comPort = null)
+        {
+            try
+            {
+                if (!ConnectionStatus.IsConnectionEstablished)
+                {
+                    if (comPort == null)
+                    {
+                        throw new SerialConnectionException();
+                    }
+                    await ConnectionStatus.StartConnection(comPort);
+                    await Task.Delay(500);
+                }
+                await _serialClient.SendBytes("WRITE_RAM", bytes);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("An error occured. Received data may be incorrect. Error details:");
+                Console.WriteLine(e);
+            }
         }
     }
 }

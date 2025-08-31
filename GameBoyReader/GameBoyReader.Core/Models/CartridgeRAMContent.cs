@@ -6,14 +6,18 @@ using System.Threading.Tasks;
 
 namespace GameBoyReader.Core.Models
 {
-    public class CartridgeContent
+    public class CartridgeRAMContent
     {
         public CartridgeInformation CartridgeInformation { get; set; }
-        public List<Byte> CartridgeByteContent { get; set; }
-        public CartridgeContent()
+        public List<Byte> CartridgeRAMByteContent { get; set; }
+        public bool IsRAMPresent { get; set; }
+
+        public CartridgeRAMContent() 
         {
             CartridgeInformation = new();
-            CartridgeByteContent = new();
+            CartridgeRAMByteContent = new();
+            IsRAMPresent = false;
         }
+
     }
 }
