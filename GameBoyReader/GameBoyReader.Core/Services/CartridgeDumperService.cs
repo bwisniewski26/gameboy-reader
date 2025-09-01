@@ -98,6 +98,7 @@ namespace GameBoyReader.Core.Services
                     await ConnectionStatus.StartConnection(comPort);
                     await Task.Delay(500);
                 }
+                await Task.Delay(500);
                 await _serialClient.SendBytes("WRITE_RAM", bytes);
             }
             catch (Exception e)

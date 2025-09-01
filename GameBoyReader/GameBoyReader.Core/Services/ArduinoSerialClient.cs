@@ -94,7 +94,7 @@ namespace GameBoyReader.Core.Services
             ConnectionStatus.SerialPort.WriteLine(readerCommand);
             await Task.Delay(200);
 
-            ConnectionStatus.SerialPort.WriteLine("START");
+            ConnectionStatus.SerialPort.Write("START");
             await Task.Delay(200);
 
             int blockSize = 1;
@@ -105,7 +105,7 @@ namespace GameBoyReader.Core.Services
             }
 
             await Task.Delay(200);
-            ConnectionStatus.SerialPort.WriteLine("END");
+            ConnectionStatus.SerialPort.Write("END");
         }
     }
 }
