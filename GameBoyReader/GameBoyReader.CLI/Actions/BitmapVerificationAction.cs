@@ -32,7 +32,7 @@ namespace GameBoyReader.CLI.Actions
             }
             if (result.IsBitmapCorrect)
             {
-                Console.WriteLine("Boot bitmap was verified successfully. This means that cartridge is a correct GameBoy cartridge.");
+                Console.WriteLine("\nBoot bitmap was verified successfully. This means that cartridge is a correct GameBoy cartridge.");
             }
             else
             {
