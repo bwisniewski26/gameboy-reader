@@ -1,7 +1,18 @@
-﻿namespace GameBoyReader.GUI.ViewModels
+﻿using CommunityToolkit.Mvvm.ComponentModel;
+using GameBoyReader.Core.Services;
+using System.Collections.ObjectModel;
+
+namespace GameBoyReader.GUI.ViewModels
 {
     public partial class MainWindowViewModel : ViewModelBase
     {
-        public string Greeting { get; } = "Welcome to Avalonia!";
+
+        public static ArduinoSerialClient SerialClient { get; } = new();
+
+        [ObservableProperty]
+        private string? selectedComPort;
+
+        public ObservableCollection<string> ComPorts { get; }
+            = new ObservableCollection<string>(SerialClient.RetrieveAvailableCOMPorts());
     }
 }
