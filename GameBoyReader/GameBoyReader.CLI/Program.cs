@@ -9,7 +9,12 @@ namespace GameBoyReader.CLI
     {
         static async Task Main(string[] args)
         {
-            string[] options = { "Choose COM port", "Check boot bitmap", "Check cartridge header", "Dump cartridge", "Exit" };
+
+            if (!Directory.Exists(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "GameBoyReader")))
+            {
+                Directory.CreateDirectory(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "GameBoyReader"));
+            }
+
             int selectedIndex = 0;
             AppDomain.CurrentDomain.ProcessExit += OnProcessExit;
 
@@ -27,6 +32,8 @@ namespace GameBoyReader.CLI
                 {
                     case 0:
                         COMPortPicker.TerminalCOMPortPicker();
+                        Console.WriteLine("Press any button to return.");
+                        Console.ReadKey();
                         break;
                     case 1:
                         await BitmapVerificationAction.VerifyBitmap();
@@ -44,6 +51,16 @@ namespace GameBoyReader.CLI
                         Console.ReadKey();
                         break;
                     case 4:
+                        await DumpCartridgeAction.DumpCartridgeRAM();
+                        Console.WriteLine("Press any button to return.");
+                        Console.ReadKey();
+                        break;
+                    case 5:
+                        await SaveWriterAction.WriteSaveAction();
+                        Console.WriteLine("Press any button to return.");
+                        Console.ReadKey();
+                        break;
+                    case 6:
                         return;
                 }
             }
@@ -62,7 +79,7 @@ namespace GameBoyReader.CLI
 
         static int TerminalPicker()
         {
-            string[] options = { "Choose COM port", "Check boot bitmap", "Check cartridge header", "Dump cartridge", "Exit" };
+            string[] options = { "Choose COM port", "Check boot bitmap", "Check cartridge header", "Dump cartridge", "Dump cartridge RAM","Write RAM to cartridge", "Exit" };
             int selectedIndex = 0;
             while (true)
             {

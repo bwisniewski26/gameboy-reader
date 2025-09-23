@@ -11,5 +11,8 @@ namespace GameBoyReader.Core.Services
     public interface ICartridgeDumperService
     {
         public Task<CartridgeContent> DumpCartridge(string? comPort = null);
+        public Task<CartridgeRAMContent> DumpCartridgeRAM(string? comPort = null);
+
+        public Task WriteCartridgeRAM(byte[] bytes, string? comPort = null);
     }
 }

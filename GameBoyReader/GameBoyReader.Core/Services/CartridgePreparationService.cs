@@ -47,6 +47,28 @@ namespace GameBoyReader.Core.Services
             return information;
         }
 
+        public async Task<int> RetrieveRAMSize()
+        {
+            CartridgeInformation cartridgeInformation = await RetrieveCartridgeInformation();
+            switch (cartridgeInformation.RAMSize)
+            {
+                case 0:
+                    return 0;
+                case 1: // 2KB RAM
+                    return 2;
+                case 2: // 8KB RAM
+                    return 8;
+                case 3: // 32KB RAM
+                    return 32;
+                case 4: // 128KB RAM
+                    return 128;
+                case 5: // 64KB RAM
+                    return 64;
+                default:
+                    return 0;
+            }
+        }
+
         public async Task<RetrievedBitmap> ValidateBootBitmap(string? comPort = null)
         {
             RetrievedBitmap retrievedBitmap = new();

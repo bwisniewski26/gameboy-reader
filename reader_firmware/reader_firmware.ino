@@ -1,14 +1,8 @@
-#define LED_PIN 7
 #define RD_PIN 10
 #define WR_PIN 12
 #define CS_PIN 9
 #define RST_PIN 6
 #define CLK_PIN 13
-
-#include "LiquidCrystal_I2C.h"
-#include  "Wire.h"
-
-LiquidCrystal_I2C lcd(0x27,  16, 2);
 
 int dumpComplete = 0;
 int input;
@@ -19,9 +13,6 @@ int headerBytesDumped = 0;
 void setup()
 {
     Serial.begin(115200);
-    lcd.init();
-    lcd.backlight();
-    pinMode(LED_PIN, OUTPUT);
     pinMode(RD_PIN, OUTPUT);
     pinMode(WR_PIN, OUTPUT);
     pinMode(CS_PIN, OUTPUT);
@@ -67,27 +58,26 @@ uint8_t readByte(uint16_t address)
 void writeByte(uint8_t data, uint16_t address)
 {
   digitalWrite(RD_PIN, HIGH);
-  digitalWrite(WR_PIN, LOW);
-  setAddress(address);
+  digitalWrite(CS_PIN, LOW); 
+
+  setAddress(address);  
 
   DDRL = 0xFF;       
-  PORTL = data;      
-  delayMicroseconds(15);
+  PORTL = data;       
+  delayMicroseconds(1); 
 
-  digitalWrite(RD_PIN, LOW);
+  digitalWrite(WR_PIN, LOW);  
+  delayMicroseconds(2);       
   digitalWrite(WR_PIN, HIGH);
 
-  DDRL = 0x00;       
+  digitalWrite(CS_PIN, HIGH);
+  
+  DDRL = 0x00;      
 }
 
-void dumpROM(uint32_t size, uint32_t startAddress = 0, uint8_t isMBC0 = 0)
-{
-    if (isMBC0 == 1) {
-      Serial.println("START"); 
-      Serial.flush();
-      kB_dumped = 0;
-    }
 
+void dumpROM(uint32_t size, uint32_t startAddress = 0)
+{
     for (uint32_t addr = startAddress; addr < startAddress + size; addr++)
     {
         uint8_t data = readByte(addr);
@@ -95,34 +85,15 @@ void dumpROM(uint32_t size, uint32_t startAddress = 0, uint8_t isMBC0 = 0)
         if (addr % 2048 == 0)
         {
           kB_dumped += 2;
-            lcd.clear();
-            lcd.setCursor(0,0);
-            lcd.print("Progress:");
-            lcd.setCursor(0,1);
-            lcd.print(kB_dumped);
-            lcd.setCursor(4,1);
-            lcd.print("KB");
-            digitalWrite(LED_PIN, !digitalRead(LED_PIN)); 
             Serial.flush();                               
         }
-    }
-
-    if (isMBC0 == 1)
-    {
-      Serial.println("END"); // End marker
-      Serial.flush();
     }
 }
 
 void dumpHeader() {
-    lcd.setCursor(0,0);
-    lcd.clear();
-    lcd.print("Sending HEADER");
 
     Serial.println("START");
     for (uint16_t addr = 0x0104; addr <= 0x0133; addr++) {
-        lcd.setCursor(0,1);
-        lcd.print(addr - 0x0134);
         uint8_t value = readByte(addr);
         Serial.write(value);
     }
@@ -133,9 +104,6 @@ void dumpHeader() {
 
 void dumpMBCType()
 {
-    lcd.setCursor(0,0);
-    lcd.clear();
-    lcd.print("Sending MBC");
     Serial.println("START");
     uint8_t value = getMBCType();
     Serial.write(value);
@@ -144,9 +112,6 @@ void dumpMBCType()
 
 void dumpROMSize()
 {
-    lcd.setCursor(0,0);
-    lcd.clear();
-    lcd.print("Sending ROM size");
     Serial.println("START");
     uint8_t value = getROMSize();
     Serial.write(value);
@@ -155,9 +120,6 @@ void dumpROMSize()
 
 void dumpRAMSize()
 {
-    lcd.setCursor(0,0);
-    lcd.clear();
-    lcd.print("Sending RAM size");
     Serial.println("START");
     uint8_t value = getRAMSize();
     Serial.write(value);
@@ -166,9 +128,6 @@ void dumpRAMSize()
 
 void dumpTitle()
 {
-    lcd.setCursor(0, 0);
-    lcd.clear();
-    lcd.print("Sending TITLE");
     Serial.println("START");
 
     char title[17];
@@ -241,91 +200,254 @@ uint32_t calculateROMAddressCount()
   return romSize;
 }
 
-
-
-void dumpMBC0()
+void dumpROMWithBanks(uint32_t romSize, uint8_t mbcType)
 {
-  uint32_t romSize = calculateROMAddressCount();
-  dumpROM(romSize, 0, 1);
+    uint32_t bankCount = romSize / 16384;
+    bool useBankSwitch = false;
+    uint16_t (*switchBank)(uint16_t) = nullptr;
+    uint16_t startAddr = 0x0000;
+
+    switch(mbcType)
+    {
+        case 0x00: case 0x08: case 0x09: // MBC0
+            bankCount = 1; // tylko bank 0
+            break;
+        case 0x01: case 0x02: case 0x03: // MBC1
+            useBankSwitch = true;
+            switchBank = switchMBC1Bank;
+            startAddr = 0x4000;
+            break;
+        case 0x05: case 0x06: // MBC2
+            useBankSwitch = true;
+            switchBank = switchMBC2Bank;
+            startAddr = 0x4000;        
+            if(bankCount > 16) bankCount = 16;
+            break;
+        case 0x0F: case 0x10: case 0x11: case 0x12: case 0x13: // MBC3
+            useBankSwitch = true;
+            switchBank = switchMBC3Bank;
+            startAddr = 0x4000;
+            break;
+        case 0x19: case 0x1A: case 0x1B: case 0x1C: case 0x1D: case 0x1E: // MBC5
+            useBankSwitch = true;
+            switchBank = switchMBC5Bank;
+            startAddr = 0x4000;
+            break;
+        default:
+            Serial.println("Unsupported MBC");
+            return;
+    }
+
+    Serial.println("START");
+    Serial.flush();
+    kB_dumped = 0;
+
+    dumpROM(0x4000, 0x0000);
+
+    if(useBankSwitch)
+    {
+        if (mbcType == 0x05 || mbcType == 0x06) { // MBC2
+          for (uint16_t bankNumber = 1; bankNumber <= 0x0F && bankNumber < bankCount; bankNumber++)
+          {
+            switchBank(bankNumber);
+            dumpROM(0x4000, 0x4000);
+          }
+        } else { // pozostałe MBC
+          for (uint16_t bankNumber = 1; bankNumber < bankCount; bankNumber++)
+          {
+            switchBank(bankNumber);
+            dumpROM(0x4000, startAddr);
+          }
+        }
+    }
+
+    Serial.println("END");
+    Serial.flush();
 }
 
-void dumpMBC1()
-{
-  uint32_t romSize = calculateROMAddressCount();
-  uint32_t bankCount = (romSize / 16384);
-  Serial.println("START"); 
-  Serial.flush();
-  kB_dumped = 0;
-  dumpROM(0x4000, 0, 0);
-  for (int bankNumber = 1; bankNumber < bankCount; bankNumber++)
-  {
-      switchMBC1Bank(bankNumber);
-      dumpROM(0x4000, 0x4000, 0);
-  }
-  Serial.println("END");
-  Serial.flush();
-}
 
-void switchMBC1Bank(uint8_t bankNumber)
+uint16_t switchMBC1Bank(uint16_t bank) { if(bank==0) bank=1; writeByte(bank, 0x2000); delay(5); return bank; }
+uint16_t switchMBC2Bank(uint16_t bank) { if(bank==0) bank=1; bank &= 0x1F; writeByte(bank, 0x2100); delay(20); return bank; }
+uint16_t switchMBC3Bank(uint16_t bank) { if(bank==0) bank=1; writeByte(bank, 0x2000); delay(5); return bank; }
+uint16_t switchMBC5Bank(uint16_t bank)
 {
-    uint8_t bank = bankNumber & 0x1F;
-    if (bank == 0) bank = 1;
-
-    writeByte(bank, 0x2000);
+    writeByte(bank & 0xFF, 0x2000);
+    writeByte((bank >> 8) & 0x01, 0x3000);
     delay(5);
+    return bank;
 }
 
+void dumpRAM() {
+    uint8_t mbcType = getMBCType();
+    uint8_t ramSize = getRAMSize();
+    uint32_t ramBankCount = 0;
+    uint32_t ramSizeBytes = 0;
+    uint16_t ramBankSize = 8192;
 
-void dumpMBC2()
+    Serial.println("START");
+    Serial.flush();
+
+    switch(ramSize) {
+        case 0:
+            ramBankCount = 0;
+            ramSizeBytes = 0;
+            break;
+        case 1: // 2KB RAM
+            ramBankCount = 1;
+            ramSizeBytes = 2048;
+            ramBankSize = 2048;
+            break;
+        case 2: // 8KB RAM
+            ramBankCount = 1;
+            ramSizeBytes = 8192;
+            break;
+        case 3: // 32KB RAM 
+            ramBankCount = 4;
+            ramSizeBytes = 32768;
+            break;
+        case 4: // 128KB RAM
+            ramBankCount = 16;
+            ramSizeBytes = 131072;
+            break;
+        case 5: // 64KB RAM 
+            ramBankCount = 8;
+            ramSizeBytes = 65536;
+            break;
+        default:
+            ramBankCount = 0;
+            ramSizeBytes = 0;
+            break;
+    }
+    int cartridgeRAMPresent;
+    switch (mbcType)
+    {
+      case 0x02:
+      case 0x03:
+      case 0x05:
+      case 0x06:
+      case 0x08:
+      case 0x09:
+      case 0x0C:
+      case 0x0D:
+      case 0x0F:
+      case 0x10:
+      case 0x11:
+      case 0x12:
+      case 0x13:
+      case 0x17:
+      case 0x19:
+      case 0x1B:
+      case 0x1E:
+      case 0x22:
+      case 0xFD:
+      case 0xFF:
+        cartridgeRAMPresent = 1;
+        break;
+      default:
+        cartridgeRAMPresent = 0;
+
+    }
+    if (cartridgeRAMPresent == 1) { 
+        if (mbcType == 0x05 || mbcType == 0x06) {
+             for (uint16_t addr = 0xA000; addr <= 0xA1FF; addr++) {
+                 uint8_t data = readByte(addr);
+                 Serial.write(data);
+             }
+        } else {
+            writeByte(0x0A, 0x0000);
+            delay(50);
+            
+            for (uint32_t bankNumber = 0; bankNumber < ramBankCount; bankNumber++) {
+                writeByte(bankNumber, 0x4000);
+                
+                for (uint16_t addr = 0xA000; addr <= 0xBFFF; addr++) {
+                    uint8_t data = readByte(addr);
+                    Serial.write(data);
+                }
+            }
+        }
+    }
+
+    Serial.println("END");
+    Serial.flush();
+}
+
+int ValidCheckSum()
 {
-  uint32_t romSize = calculateROMAddressCount();
-  uint32_t bankCount = (romSize / 16384);
-  Serial.println("START"); 
-  Serial.flush();
-  kB_dumped = 0;
-  dumpROM(0x4000, 0, 0);
-  for (int bankNumber = 1; bankNumber < bankCount; bankNumber++)
+  int checksum = 0;
+
+  for (int j = 0x134; j < 0x14E; j++)
   {
-      switchMBC2Bank(bankNumber);
-      dumpROM(0x4000, 0x4000, 0);
+      checksum += readByte(j);
   }
-  Serial.println("END"); // End marker
-  Serial.flush();
-}
 
-void switchMBC2Bank(uint8_t bankNumber)
-{
-    uint8_t bank = bankNumber & 0x1F;
-    if (bank == 0) bank = 1;
-
-    writeByte(bank, 0x2100);
-    delay(5);
-
-}
-
-void dumpMBC3()
-{
-  uint32_t romSize = calculateROMAddressCount();
-  uint32_t bankCount = (romSize / 16384);
-  Serial.println("START"); 
-  Serial.flush();
-  kB_dumped = 0;
-  dumpROM(0x4000, 0, 0);
-  for (int bankNumber = 1; bankNumber < bankCount; bankNumber++)
+  if (((checksum + 25) & 0xFF) == 0)
   {
-      switchMBC3Bank(bankNumber);
-      dumpROM(0x4000, 0x4000, 0);
+    return 1;
   }
-  Serial.println("END");
-  Serial.flush();
+  return 0;
 }
 
-void switchMBC3Bank(uint8_t bankNumber)
-{
-    if (bankNumber == 0) bankNumber = 1;
+void saveRAMToCart() {
+    uint8_t mbcType = getMBCType();
+    uint8_t ramSize = getRAMSize();
+    uint32_t ramBankCount = 0;
+    uint16_t ramBankSize = 8192; 
+    uint32_t ramSizeBytes = 0;
 
-    writeByte(bankNumber, 0x2000);
-    delay(5);
+    switch(ramSize) {
+        case 0: ramBankCount = 0; ramSizeBytes = 0; break;
+        case 1: ramBankCount = 1; ramSizeBytes = 2048; ramBankSize = 2048; break;
+        case 2: ramBankCount = 1; ramSizeBytes = 8192; break;
+        case 3: ramBankCount = 4; ramSizeBytes = 32768; break;
+        case 4: ramBankCount = 16; ramSizeBytes = 131072; break;
+        case 5: ramBankCount = 8; ramSizeBytes = 65536; break;
+        default: ramBankCount = 0; ramSizeBytes = 0; break;
+    }
+
+    if (ramBankCount == 0) return;
+
+    int cartridgeBattery;
+    switch (mbcType) {
+      case 0x03: case 0x06: case 0x09: case 0x0D:
+      case 0x0F: case 0x10: case 0x13: case 0x17:
+      case 0x1B: case 0x1E: case 0x22: case 0xFD:
+      case 0xFF:
+        cartridgeBattery = 1; break;
+      default:
+        cartridgeBattery = 0;
+    }
+
+    if (cartridgeBattery) {
+        writeByte(0x0A, 0x0000);
+        delayMicroseconds(50);
+    }
+
+    while (!Serial.find("START")) { ; }
+
+    uint32_t address = 0;
+    uint8_t currentBank = 0xFF;
+
+    while (address < ramSizeBytes) {
+        if (Serial.available()) {
+            uint8_t data = Serial.read();
+
+            if ((cartridgeBattery == 1) && ramBankCount > 1) {
+                uint8_t bank = address / ramBankSize;
+                if (bank != currentBank) {
+                    writeByte(bank, 0x4000);
+                    currentBank = bank;
+                }
+            }
+
+            if (mbcType == 0x02) data &= 0x0F;
+
+            writeByte(data, 0xA000 + (address % ramBankSize));
+            address++;
+        }
+    }
+
+    while (!Serial.find("END")) { ; }
 }
 
 void loop()
@@ -355,47 +477,29 @@ void loop()
       }
       else if (command == "DUMP_MBC0")
       {
-        digitalWrite(LED_PIN, HIGH);
-        delay(500);
-        digitalWrite(LED_PIN, LOW);
-        lcd.setCursor(0, 0);
-        lcd.clear();
-        lcd.print("MBC0 Cart dump");
-        dumpMBC0();
+        dumpROMWithBanks(calculateROMAddressCount(), getMBCType());
       }
       else if (command == "DUMP_MBC1")
       {
-        digitalWrite(LED_PIN, HIGH);
-        delay(500);
-        digitalWrite(LED_PIN, LOW);
-        lcd.setCursor(0, 0);
-        lcd.clear();
-        lcd.print("MBC1 Cart dump");
-        dumpMBC1();
+        dumpROMWithBanks(calculateROMAddressCount(), getMBCType());
       } else if (command == "DUMP_MBC2")
       {
-        digitalWrite(LED_PIN, HIGH);
-        delay(500);
-        digitalWrite(LED_PIN, LOW);
-        lcd.setCursor(0, 0);
-        lcd.clear();
-        lcd.print("MBC2 Cart dump");
-        dumpMBC2();
+        dumpROMWithBanks(calculateROMAddressCount(), getMBCType());
       }
       else if (command == "DUMP_MBC3")
       {
-        digitalWrite(LED_PIN, HIGH);
-        delay(500);
-        digitalWrite(LED_PIN, LOW);
-        lcd.setCursor(0, 0);
-        lcd.clear();
-        lcd.print("MBC2 Cart dump");
-        dumpMBC3();
-      }
-      else {
-        lcd.setCursor(0, 0);
-        lcd.clear();
-        lcd.print("Unknown command");
+        dumpROMWithBanks(calculateROMAddressCount(), getMBCType());
+      } else if (command == "DUMP_RAM")
+      {
+        dumpRAM();
+      } else if (command == "WRITE_RAM") {
+        saveRAMToCart();
+      } else if (command == "CHECKSUM_VERIFY")
+      {
+        Serial.println(ValidCheckSum());
+      } else if (command == "PING")
+      {
+        Serial.print("PONG");
       }
     } 
 }

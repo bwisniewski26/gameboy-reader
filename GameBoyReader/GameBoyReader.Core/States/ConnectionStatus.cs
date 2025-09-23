@@ -1,4 +1,5 @@
-﻿using System;
+﻿using GameBoyReader.Core.Services;
+using System;
 using System.Collections.Generic;
 using System.IO.Ports;
 using System.Linq;
@@ -11,15 +12,24 @@ namespace GameBoyReader.Core.States
     {
         public static SerialPort? SerialPort = null;
         public static bool IsConnectionEstablished = false;
+        public static ArduinoSerialClient serialClient = new();
 
-        public static Task StartConnection(string comPort)
+        public static async Task StartConnection(string comPort)
         {
             SerialPort = new SerialPort(comPort, 115200);
             SerialPort.ReadBufferSize = 65536;
             SerialPort.WriteBufferSize = 4096;
             SerialPort.Open();
-            IsConnectionEstablished = true;
-            return Task.CompletedTask;
+            try
+            {
+                var result = await serialClient.RetrieveBytes("PING");
+                IsConnectionEstablished = true;
+            } catch (Exception ex)
+            {
+                Console.WriteLine("Error has occured while establishing connection. Error details:");
+                Console.WriteLine(ex.Message);
+                IsConnectionEstablished = false;
+            }
         }
 
         public static void StopConnection()
