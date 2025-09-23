@@ -200,28 +200,74 @@ uint32_t calculateROMAddressCount()
   return romSize;
 }
 
-void dumpROMWithBanks(uint32_t romSize, uint16_t (*switchBank)(uint16_t) = nullptr)
+void dumpROMWithBanks(uint32_t romSize, uint8_t mbcType)
 {
     uint32_t bankCount = romSize / 16384;
+    bool useBankSwitch = false;
+    uint16_t (*switchBank)(uint16_t) = nullptr;
+    uint16_t startAddr = 0x0000;
+
+    switch(mbcType)
+    {
+        case 0x00: case 0x08: case 0x09: // MBC0
+            bankCount = 1; // tylko bank 0
+            break;
+        case 0x01: case 0x02: case 0x03: // MBC1
+            useBankSwitch = true;
+            switchBank = switchMBC1Bank;
+            startAddr = 0x4000;
+            break;
+        case 0x05: case 0x06: // MBC2
+            useBankSwitch = true;
+            switchBank = switchMBC2Bank;
+            startAddr = 0x4000;        
+            if(bankCount > 16) bankCount = 16;
+            break;
+        case 0x0F: case 0x10: case 0x11: case 0x12: case 0x13: // MBC3
+            useBankSwitch = true;
+            switchBank = switchMBC3Bank;
+            startAddr = 0x4000;
+            break;
+        case 0x19: case 0x1A: case 0x1B: case 0x1C: case 0x1D: case 0x1E: // MBC5
+            useBankSwitch = true;
+            switchBank = switchMBC5Bank;
+            startAddr = 0x4000;
+            break;
+        default:
+            Serial.println("Unsupported MBC");
+            return;
+    }
 
     Serial.println("START");
     Serial.flush();
     kB_dumped = 0;
 
-    dumpROM(0x4000, 0);
+    dumpROM(0x4000, 0x0000);
 
-    for (uint16_t bankNumber = 1; bankNumber < bankCount; bankNumber++)
+    if(useBankSwitch)
     {
-        if (switchBank) switchBank(bankNumber);
-        dumpROM(0x4000, 0x4000);
+        if (mbcType == 0x05 || mbcType == 0x06) { // MBC2
+          for (uint16_t bankNumber = 1; bankNumber <= 0x0F && bankNumber < bankCount; bankNumber++)
+          {
+            switchBank(bankNumber);
+            dumpROM(0x4000, 0x4000);
+          }
+        } else { // pozostałe MBC
+          for (uint16_t bankNumber = 1; bankNumber < bankCount; bankNumber++)
+          {
+            switchBank(bankNumber);
+            dumpROM(0x4000, startAddr);
+          }
+        }
     }
 
     Serial.println("END");
     Serial.flush();
 }
 
+
 uint16_t switchMBC1Bank(uint16_t bank) { if(bank==0) bank=1; writeByte(bank, 0x2000); delay(5); return bank; }
-uint16_t switchMBC2Bank(uint16_t bank) { if(bank==0) bank=1; writeByte(bank, 0x2100); delay(15); return bank; }
+uint16_t switchMBC2Bank(uint16_t bank) { if(bank==0) bank=1; bank &= 0x1F; writeByte(bank, 0x2100); delay(20); return bank; }
 uint16_t switchMBC3Bank(uint16_t bank) { if(bank==0) bank=1; writeByte(bank, 0x2000); delay(5); return bank; }
 uint16_t switchMBC5Bank(uint16_t bank)
 {
@@ -230,12 +276,6 @@ uint16_t switchMBC5Bank(uint16_t bank)
     delay(5);
     return bank;
 }
-
-void dumpMBC0() { dumpROMWithBanks(calculateROMAddressCount()); }
-void dumpMBC1() { dumpROMWithBanks(calculateROMAddressCount(), switchMBC1Bank); }
-void dumpMBC2() { dumpROMWithBanks(calculateROMAddressCount(), switchMBC2Bank); }
-void dumpMBC3() { dumpROMWithBanks(calculateROMAddressCount(), switchMBC3Bank); }
-void dumpMBC5() { dumpROMWithBanks(calculateROMAddressCount(), switchMBC5Bank); }
 
 void dumpRAM() {
     uint8_t mbcType = getMBCType();
@@ -437,18 +477,18 @@ void loop()
       }
       else if (command == "DUMP_MBC0")
       {
-        dumpMBC0();
+        dumpROMWithBanks(calculateROMAddressCount(), getMBCType());
       }
       else if (command == "DUMP_MBC1")
       {
-        dumpMBC1();
+        dumpROMWithBanks(calculateROMAddressCount(), getMBCType());
       } else if (command == "DUMP_MBC2")
       {
-        dumpMBC2();
+        dumpROMWithBanks(calculateROMAddressCount(), getMBCType());
       }
       else if (command == "DUMP_MBC3")
       {
-        dumpMBC3();
+        dumpROMWithBanks(calculateROMAddressCount(), getMBCType());
       } else if (command == "DUMP_RAM")
       {
         dumpRAM();
@@ -457,6 +497,9 @@ void loop()
       } else if (command == "CHECKSUM_VERIFY")
       {
         Serial.println(ValidCheckSum());
+      } else if (command == "PING")
+      {
+        Serial.print("PONG");
       }
     } 
 }
