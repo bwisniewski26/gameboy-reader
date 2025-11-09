@@ -7,7 +7,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GameBoyReader.Core", "GameB
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GameBoyReader.CLI", "GameBoyReader.CLI\GameBoyReader.CLI.csproj", "{6E767AC6-41A9-4F92-95C7-7CE48D39D1B0}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GameBoyReader.GUI", "GameBoyReader.GUI\GameBoyReader.GUI.csproj", "{95F755E6-D725-41A4-A207-6E415EBBAFEB}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GameBoyReader.GUI", "GameBoyReader.GUI\GameBoyReader.GUI.csproj", "{6B500D1B-A6EC-4DFC-947F-A6CE34C96FD2}"
+	ProjectSection(ProjectDependencies) = postProject
+		{447E2A96-C868-44AB-9667-B4147A688EE9} = {447E2A96-C868-44AB-9667-B4147A688EE9}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -23,10 +26,12 @@ Global
 		{6E767AC6-41A9-4F92-95C7-7CE48D39D1B0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6E767AC6-41A9-4F92-95C7-7CE48D39D1B0}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6E767AC6-41A9-4F92-95C7-7CE48D39D1B0}.Release|Any CPU.Build.0 = Release|Any CPU
-		{95F755E6-D725-41A4-A207-6E415EBBAFEB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{95F755E6-D725-41A4-A207-6E415EBBAFEB}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{95F755E6-D725-41A4-A207-6E415EBBAFEB}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{95F755E6-D725-41A4-A207-6E415EBBAFEB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6B500D1B-A6EC-4DFC-947F-A6CE34C96FD2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6B500D1B-A6EC-4DFC-947F-A6CE34C96FD2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6B500D1B-A6EC-4DFC-947F-A6CE34C96FD2}.Debug|Any CPU.Deploy.0 = Debug|Any CPU
+		{6B500D1B-A6EC-4DFC-947F-A6CE34C96FD2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6B500D1B-A6EC-4DFC-947F-A6CE34C96FD2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6B500D1B-A6EC-4DFC-947F-A6CE34C96FD2}.Release|Any CPU.Deploy.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

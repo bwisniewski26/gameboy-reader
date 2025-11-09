@@ -1,11 +1,4 @@
 ﻿using GameBoyReader.Core.Services;
-using GameBoyReader.Core.States;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace GameBoyReader.CLI.Actions
 {
@@ -69,7 +62,7 @@ namespace GameBoyReader.CLI.Actions
                 {
                     try
                     {
-                        await ConnectionStatus.StartConnection(options[selectedIndex]);
+                        await ConnectionService.StartConnection(options[selectedIndex]);
                     }
                     catch (Exception e)
                     {
@@ -77,7 +70,14 @@ namespace GameBoyReader.CLI.Actions
                         Console.WriteLine(e.Message);
                     }
                 }
-                return;
+                if (ConnectionService.IsConnectionEstablished)
+                {
+                    Console.WriteLine("Connection has been established successfully.");
+                } else
+                {
+                    Console.WriteLine("There was an issue establishing connection. Please plug device into your computer again, and restart this app.");
+                }
+                    return;
             }
         }
     }

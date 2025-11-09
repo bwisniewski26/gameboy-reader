@@ -1,6 +1,5 @@
 ﻿using GameBoyReader.Core.Exceptions;
 using GameBoyReader.Core.Models;
-using GameBoyReader.Core.States;
 using GameBoyReader.Core.Utils;
 using System.Text;
 
@@ -16,13 +15,13 @@ namespace GameBoyReader.Core.Services
             try
             {
 
-                if (!ConnectionStatus.IsConnectionEstablished)
+                if (!ConnectionService.IsConnectionEstablished)
                 {
                     if (comPort == null)
                     {
                         throw new SerialConnectionException();
                     }
-                    await ConnectionStatus.StartConnection(comPort);
+                    await ConnectionService.StartConnection(comPort);
                     await Task.Delay(500);
                 }
 
@@ -74,13 +73,13 @@ namespace GameBoyReader.Core.Services
             RetrievedBitmap retrievedBitmap = new();
             try
             {
-                if (!ConnectionStatus.IsConnectionEstablished)
+                if (!ConnectionService.IsConnectionEstablished)
                 {
                     if (comPort == null)
                     {
                         throw new SerialConnectionException();
                     }
-                    await ConnectionStatus.StartConnection(comPort);
+                    await ConnectionService.StartConnection(comPort);
                     await Task.Delay(500);
                 }
                 retrievedBitmap.Bitmap = await arduinoClient.RetrieveBytes("GET_HEADER");

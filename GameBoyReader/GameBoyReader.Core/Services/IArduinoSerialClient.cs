@@ -1,7 +1,4 @@
-﻿using GameBoyReader.Core.Enums;
-using GameBoyReader.Core.Models;
-
-namespace GameBoyReader.Core.Services
+﻿namespace GameBoyReader.Core.Services
 {
     public interface IArduinoSerialClient
     {

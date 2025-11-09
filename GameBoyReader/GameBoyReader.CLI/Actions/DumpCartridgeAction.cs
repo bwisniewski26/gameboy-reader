@@ -1,14 +1,5 @@
 ﻿using GameBoyReader.Core.Models;
 using GameBoyReader.Core.Services;
-using GameBoyReader.Core.Utils;
-using GameBoyReader.Core.Exceptions;
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using GameBoyReader.Core.States;
 
 namespace GameBoyReader.CLI.Actions
 {
@@ -22,7 +13,7 @@ namespace GameBoyReader.CLI.Actions
         private static CartridgeDumperService dumperService = new();
         public static async Task DumpCartridge()
         {
-            if (!ConnectionStatus.IsConnectionEstablished)
+            if (!ConnectionService.IsConnectionEstablished)
             {
                 COMPortPicker.TerminalCOMPortPicker();
             }
@@ -57,7 +48,7 @@ namespace GameBoyReader.CLI.Actions
 
         public static async Task DumpCartridgeRAM()
         {
-            if (!ConnectionStatus.IsConnectionEstablished)
+            if (!ConnectionService.IsConnectionEstablished)
             {
                 COMPortPicker.TerminalCOMPortPicker();
             }

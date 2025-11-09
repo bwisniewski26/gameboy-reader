@@ -1,14 +1,8 @@
-﻿using GameBoyReader.Core.Services;
-using System;
-using System.Collections.Generic;
-using System.IO.Ports;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.IO.Ports;
 
-namespace GameBoyReader.Core.States
+namespace GameBoyReader.Core.Services
 {
-    public static class ConnectionStatus
+    public static class ConnectionService
     {
         public static SerialPort? SerialPort = null;
         public static bool IsConnectionEstablished = false;
@@ -16,10 +10,11 @@ namespace GameBoyReader.Core.States
 
         public static async Task StartConnection(string comPort)
         {
-            SerialPort = new SerialPort(comPort, 115200);
+            SerialPort = new SerialPort(comPort, 74480);
             SerialPort.ReadBufferSize = 65536;
             SerialPort.WriteBufferSize = 4096;
             SerialPort.Open();
+            Thread.Sleep(1500);
             try
             {
                 var result = await serialClient.RetrieveBytes("PING");
@@ -29,6 +24,7 @@ namespace GameBoyReader.Core.States
                 Console.WriteLine("Error has occured while establishing connection. Error details:");
                 Console.WriteLine(ex.Message);
                 IsConnectionEstablished = false;
+                SerialPort.Close();
             }
         }
 

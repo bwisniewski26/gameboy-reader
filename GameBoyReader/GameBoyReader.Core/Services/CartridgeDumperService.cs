@@ -1,7 +1,6 @@
 ﻿using GameBoyReader.Core.Enums;
 using GameBoyReader.Core.Exceptions;
 using GameBoyReader.Core.Models;
-using GameBoyReader.Core.States;
 
 namespace GameBoyReader.Core.Services
 {
@@ -15,13 +14,13 @@ namespace GameBoyReader.Core.Services
 
             try
             {
-                if (!ConnectionStatus.IsConnectionEstablished)
+                if (!ConnectionService.IsConnectionEstablished)
                 {
                     if (comPort == null)
                     {
                         throw new SerialConnectionException();
                     }
-                    await ConnectionStatus.StartConnection(comPort);
+                    await ConnectionService.StartConnection(comPort);
                     await Task.Delay(500);
                 }
                 cartridgeContent.CartridgeInformation = await _preparationService.RetrieveCartridgeInformation(comPort);
@@ -65,13 +64,13 @@ namespace GameBoyReader.Core.Services
 
             try
             {
-                if (!ConnectionStatus.IsConnectionEstablished)
+                if (!ConnectionService.IsConnectionEstablished)
                 {
                     if (comPort == null)
                     {
                         throw new SerialConnectionException();
                     }
-                    await ConnectionStatus.StartConnection(comPort);
+                    await ConnectionService.StartConnection(comPort);
                     await Task.Delay(500);
                 }
                 cartridgeRAMContent.CartridgeRAMByteContent = await _serialClient.RetrieveBytes("DUMP_RAM");
@@ -89,13 +88,13 @@ namespace GameBoyReader.Core.Services
         {
             try
             {
-                if (!ConnectionStatus.IsConnectionEstablished)
+                if (!ConnectionService.IsConnectionEstablished)
                 {
                     if (comPort == null)
                     {
                         throw new SerialConnectionException();
                     }
-                    await ConnectionStatus.StartConnection(comPort);
+                    await ConnectionService.StartConnection(comPort);
                     await Task.Delay(500);
                 }
                 await Task.Delay(500);
