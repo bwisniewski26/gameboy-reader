@@ -1,7 +1,10 @@
 ﻿@page "/cartridge_management"
+@using GameBoyReader.Core.Enums
+@using GameBoyReader.Core.Exceptions
 @using GameBoyReader.Core.Models
 @using GameBoyReader.Core.Services
 @using GameBoyReader.Core.Utils
+@using Microsoft.Maui.Storage;
 
 <h1>Cartridge Tools</h1>
 
@@ -15,7 +18,7 @@
 <div class="page-content-container">
     <h2>Cartridge boot bitmap</h2>
     <p>Cartridge boot bitmap is used by GameBoy to determine if inserted cartridge is valid and its contents are safe to execute.</p>
-    <HxButton Color="ThemeColor.Primary" OnClick="CheckCartridgeBootBitmap" Enabled="ConnectionService.IsConnectionEstablished">Verify cartridge boot bitmap</HxButton>
+    <HxButton Color="ThemeColor.Primary" OnClick="CheckCartridgeBootBitmap" Enabled="ConnectionService.IsConnectionEstablished && !_isOperationRunning">Verify cartridge boot bitmap</HxButton>
     <div class="dump-result">
         @if (_showRetrievedBitmap && _retrievedBitmap.IsBitmapCorrect)
         {
@@ -31,14 +34,14 @@
 
 <div class="page-content-container">
     <h2>Cartridge information</h2>
-    <HxButton Color="ThemeColor.Primary" OnClick="RetrieveCartridgeInformation" Enabled="ConnectionService.IsConnectionEstablished">Retrieve cartridge information</HxButton>
+    <HxButton Color="ThemeColor.Primary" OnClick="RetrieveCartridgeInformation" Enabled="ConnectionService.IsConnectionEstablished && !_isOperationRunning">Retrieve cartridge information</HxButton>
     <div class="dump-result">
         @if (_showCartridgeInformation)
         {
             <p>Game title: @_information.Name</p>
             <p>Cartridge type: @CartridgeTypeConverter.ConvertFromCartridgeTypeToString(_information.Type)</p>
             <p>ROM Size: @(32 * 1024 * (1 << _information.ROMSize))B</p>
-            <p>RAM Size: @_information.RAMSize</p>
+            <p>RAM Size: @(_information.RAMSize)KB</p>
         } else
         {
             <p>Game title:</p>
@@ -50,12 +53,28 @@
 </div>
 
 <div class="page-content-container">
-    <h2>Dump cartridge</h2>
+    <h2>Dump cartridge ROM</h2>
     <p>This tool allows you to copy cartridge's content onto your computer. Depending on the game this can take from few seconds up to few minutes.</p>
-    <HxButton Color="ThemeColor.Primary" OnClick="DumpROM" Enabled="ConnectionService.IsConnectionEstablished">Dump cartridge ROM</HxButton>
+    <HxButton Color="ThemeColor.Primary" OnClick="DumpROM" Enabled="ConnectionService.IsConnectionEstablished && !_isOperationRunning">Dump cartridge ROM</HxButton>
 </div>
 
-<HxModal @ref="_saveROMModal" Title="Save ROM">
+<div class="page-content-container">
+    <h2>Dump cartridge RAM</h2>
+    <p>This tool allows you to dump cartridge's RAM content onto your computer. It often contains saved states of your games. Please note some cartridges do not have RAM memory built in, hence dumping its content is not possible.</p>
+    <HxButton Color="ThemeColor.Primary" OnClick="DumpRAM" Enabled="ConnectionService.IsConnectionEstablished && !_isOperationRunning">Dump cartridge RAM</HxButton>
+    @if (_dumpRAMError != "")
+    {
+        <p class="dump-error">@_dumpRAMError</p>
+    }
+</div>
+
+<div class="page-content-container">
+    <h2>Write cartridge RAM</h2>
+    <p>This tool allows you to write RAM file stored on your computer onto cartridge's RAM memory. Please note that writing RAM from cartridge containing another game than it was dumped from may cause data corruption. Proceed with caution.</p>
+    <HxButton Color="ThemeColor.Warning" OnClick="ShowWriteModal" Enabled="ConnectionService.IsConnectionEstablished && !_isOperationRunning">Write RAM wizard</HxButton>
+</div>
+
+<HxModal @ref="_saveDumpModal" Title="Save dumped data">
     <BodyTemplate>
         <HxInputText Label="File name" @bind-Value="@_fileName" Hint="This file will be saved in GameBoyReader folder you can find in your Documents." />
         @if (_saveReturnMessage != "")
@@ -68,53 +87,145 @@
         }
     </BodyTemplate>
 	<FooterTemplate>
-        <HxButton Color="ThemeColor.Success" OnClick="@SaveROM">Save</HxButton>
-        <HxButton Color="ThemeColor.Danger" OnClick="@CancelROMSave">Cancel</HxButton>
+        <HxButton Color="ThemeColor.Secondary">Verify selected file</HxButton>
+        <HxButton Color="ThemeColor.Success" OnClick="@SaveDumpedData">Save</HxButton>
+        <HxButton Color="ThemeColor.Danger" OnClick="@CancelDumpSave">Cancel</HxButton>
+    </FooterTemplate>
+</HxModal>
+
+<HxModal @ref="_writeRAMModal" Title="Write RAM to cartridge">
+    <BodyTemplate>
+        <p>Please select file you would like to write to the cartridge</p>
+        <HxButton Color="ThemeColor.Primary" OnClick="@SelectFile">Choose file</HxButton>
+        @if (_writeRAMMessage != "")
+        {
+            <p>@_writeRAMMessage</p>
+        }
+        @if (_writeRAMError != "")
+        {
+            <p class="dump-error">@_writeRAMError</p>
+        }
+    </BodyTemplate>
+    <FooterTemplate>
+        <HxButton Color="ThemeColor.Warning" OnClick="@VerifySelectedFile">Verify file again</HxButton>
+        <HxButton Color="ThemeColor.Success" OnClick="@WriteSelectedFile" Enabled="_isFileVerified">Write</HxButton>
+        <HxButton Color="ThemeColor.Danger" OnClick="@CancelWrite">Cancel</HxButton>
     </FooterTemplate>
 </HxModal>
 
 @code {
     private static CartridgePreparationService _cartridgePreparationService = new();
     private static CartridgeDumperService _cartridgeDumper = new();
+
     private CartridgeInformation _information = new();
     private RetrievedBitmap _retrievedBitmap = new();
     private CartridgeContent _cartridgeContent = new();
-    private HxModal _saveROMModal;
+    private CartridgeRAMContent _cartridgeRAMContent = new();
+    private byte[] _selectedRAMFileContent;
+
+    private HxModal _saveDumpModal = new();
+    private HxModal _writeRAMModal = new();
+
+    private bool _isOperationRunning = false;
     private bool _showCartridgeInformation = false;
     private bool _showRetrievedBitmap = false;
     private bool _showSaveROMModal = false;
-    private string _fileName = "game_dump.gb";
+    private bool _showSaveRAMModal = false;
+    private bool _isFileVerified = false;
+
+    private string _fileName = "game_dump";
     private string _saveReturnMessage = "";
     private string _saveErrorMessage = "";
+    private string _dumpRAMError = "";
+    private string _writeRAMMessage = "";
+    private string _writeRAMError = "";
+
+    private enum DumpOperationType
+    {
+        ROM,
+        RAM
+    }
+
+    private DumpOperationType _dumpType = DumpOperationType.ROM;
 
     private async Task RetrieveCartridgeInformation()
     {
+        SwitchEnablingOperations();
         _information = await _cartridgePreparationService.RetrieveCartridgeInformation();
         _showCartridgeInformation = true;
+        SwitchEnablingOperations();
     }
 
     private async Task CheckCartridgeBootBitmap()
     {
+        SwitchEnablingOperations();
         _retrievedBitmap = await _cartridgePreparationService.ValidateBootBitmap();
         _showRetrievedBitmap = true;
+        SwitchEnablingOperations();
     }
 
     private async Task DumpROM()
     {
+        SwitchEnablingOperations();
+        _dumpType = DumpOperationType.ROM;
         _cartridgeContent = await _cartridgeDumper.DumpCartridge();
-        await _saveROMModal.ShowAsync();
+        await _saveDumpModal.ShowAsync();
+        SwitchEnablingOperations();
     }
 
-    private async Task SaveROM()
+    private async Task DumpRAM()
+    {
+        SwitchEnablingOperations();
+        if (await VerifyCartridgeRAMPresence(true))
+        {
+            _dumpType = DumpOperationType.RAM;
+            _cartridgeRAMContent = await _cartridgeDumper.DumpCartridgeRAM();
+            await _saveDumpModal.ShowAsync();       
+        }
+        SwitchEnablingOperations();
+    }
+
+    private async Task<bool> VerifyCartridgeRAMPresence(bool isDumpingRom = false)
+    {
+        int ramSize = await GetRAMSize();
+        CartridgeType cartridgeType = await _cartridgePreparationService.RetrieveCartridgeType();
+        if (ramSize == 0 && (cartridgeType != CartridgeType.MBC2 || cartridgeType != CartridgeType.MBC2_BATTERY))
+        {
+            if (isDumpingRom) _dumpRAMError = "This cartridge does not have RAM memory built in. Please insert different cartridge to use this tool.";
+            return false;
+        }
+        return true;
+    }
+
+    private async Task<int> GetRAMSize()
+    {
+        return await _cartridgePreparationService.RetrieveRAMSize();
+    }
+
+    private async Task SaveDumpedData()
     {
         if (_fileName == "" || _fileName == null)
         {
             _saveReturnMessage = "File name cannot be empty.";
             return;
         }
-        if (!(_fileName.EndsWith(".gb")))
+        switch (_dumpType)
         {
-            _fileName += ".gb";
+            case DumpOperationType.ROM:
+                if (!(_fileName.EndsWith(".gb")))
+                {
+                    _fileName += ".gb";
+                }
+                break;
+            case DumpOperationType.RAM:
+                if (!(_fileName.EndsWith(".sav")))
+                {
+                    _fileName += ".sav";
+                }
+                break;
+
+            default:
+                throw new IncorrectOperationTypeException();
         }
         if (File.Exists(Path.Combine(RetrieveSaveLocation(), _fileName)))
         {
@@ -124,27 +235,111 @@
 
         try
         {
-            await File.WriteAllBytesAsync(Path.Combine(RetrieveSaveLocation(), _fileName), _cartridgeContent.CartridgeByteContent.ToArray());
+            await File.WriteAllBytesAsync(Path.Combine(RetrieveSaveLocation(), _fileName), _dumpType == DumpOperationType.ROM ? _cartridgeContent.CartridgeByteContent.ToArray() : _cartridgeRAMContent.CartridgeRAMByteContent.ToArray());
         }
         catch (Exception ex)
         {
             _saveErrorMessage = ex.Message;
         }
-        _cartridgeContent = new();
-        _fileName = "game_dump.gb";
-        await _saveROMModal.HideAsync();
+        await _saveDumpModal.HideAsync();
+        SetVariablesToDefault();
     }
 
-    private async Task CancelROMSave()
+    private async Task SelectFile()
+    {
+        try
+        {
+            var result = await FilePicker.Default.PickAsync();
+
+            if (result != null)
+            {
+                string fileName = result.FileName;
+                string filePath = result.FullPath;
+
+                _selectedRAMFileContent = File.ReadAllBytes(filePath);
+            }
+        }
+        catch (Exception ex)
+        {
+            _writeRAMError = ex.Message;
+            return;
+        }
+
+        await VerifySelectedFile();
+    }
+
+    private async Task VerifySelectedFile()
+    {
+        if (await VerifyCartridgeRAMPresence())
+        {
+            int expectedSize = await GetRAMSize();
+            expectedSize *= 1024;
+            if (expectedSize == _selectedRAMFileContent.Count())
+            {
+                _isFileVerified = true;
+                _writeRAMMessage = "This file has been verified successfully.";
+                _writeRAMError = "";
+                return;
+            } else
+            {
+                _isFileVerified = false;
+                _writeRAMMessage = "";
+                _writeRAMError = "RAM size and selected file size are different. Choose another file.";
+            }
+        } else
+        {
+            _isFileVerified = false;
+            _writeRAMMessage = "";
+            _writeRAMError = "This cartridge is invalid or doesn't have RAM memory.";
+        }
+
+    }
+
+    private async Task WriteSelectedFile()
+    {
+        await _cartridgeDumper.WriteCartridgeRAM(_selectedRAMFileContent);
+        await _writeRAMModal.HideAsync();
+        SetVariablesToDefault();
+    }
+
+    private async Task ShowWriteModal()
+    {
+        await _writeRAMModal.ShowAsync();
+    }
+
+    private async Task CancelWrite()
+    {
+        await _writeRAMModal.HideAsync();
+        SetVariablesToDefault();
+    }
+
+    private async Task CancelDumpSave()
+    {
+        await _saveDumpModal.HideAsync();
+        SetVariablesToDefault();
+    }
+
+    private void SetVariablesToDefault()
     {
         _cartridgeContent = new();
+        _cartridgeRAMContent = new();
+        _selectedRAMFileContent = new byte[1];
+        _dumpType = DumpOperationType.ROM;
         _fileName = "game_dump.gb";
-        await _saveROMModal.HideAsync();
+        _saveErrorMessage = "";
+        _saveReturnMessage = "";
+        _writeRAMError = "";
+        _writeRAMMessage = "";
     }
 
-    private static string RetrieveSaveLocation()
+    private string RetrieveSaveLocation()
     {
         string result = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "GameBoyReader");
         return result;
+    }
+
+    private void SwitchEnablingOperations()
+    {
+        _isOperationRunning = !_isOperationRunning;
     }
 }

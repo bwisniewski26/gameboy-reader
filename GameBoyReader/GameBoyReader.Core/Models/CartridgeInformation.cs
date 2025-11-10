@@ -7,6 +7,6 @@ namespace GameBoyReader.Core.Models
         public string Name { get; set; } = "";
         public CartridgeType Type { get; set; }
         public Byte ROMSize { get; set; }
-        public Byte RAMSize { get; set; }
+        public int RAMSize { get; set; }
     }
 }
