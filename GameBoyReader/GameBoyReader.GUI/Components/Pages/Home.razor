@@ -1,7 +1,48 @@
 ﻿@page "/"
+@using GameBoyReader.Core.Enums
+@using GameBoyReader.Core.Models
+@using GameBoyReader.Core.Services
+@using GameBoyReader.GUI.Models
+
 <h3>Home</h3>
 
+<div class="cartridge-grid">
+    @foreach (var file in _dumpFiles)
+    {
+        <DumpedCartridge Name="@file.title" />
+    }
+</div>
 
 @code {
-    
+    CartridgeByteContentService cartridgeByteContentService = new();
+
+    private List<DumpFile> _dumpFiles = new();
+
+    string 
+
+    protected override async Task OnInitializedAsync()
+    {
+        var folderPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "GameBoyReader");
+        var files = Directory.GetFiles(folderPath);
+
+        foreach (var file in files)
+        {
+            if (file.EndsWith(".gb", StringComparison.OrdinalIgnoreCase))
+            {
+                try
+                {
+                    var byteContent = await File.ReadAllBytesAsync(file);
+                    string title = cartridgeByteContentService.RetrieveGameName(byteContent);
+                    CartridgeType type = cartridgeByteContentService.RetrieveCartridgeType(byteContent);
+
+                    DumpFile dumpedFileInformation = new(title, type, file);
+                    _dumpFiles.Add(dumpedFileInformation);
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine($"Failed to read {file}: {e.Message}");
+                }
+            }
+        }
+    }
 }
