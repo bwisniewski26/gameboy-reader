@@ -4,6 +4,9 @@
 @using GameBoyReader.Core.Services
 @using GameBoyReader.Core.Utils
 @using GameBoyReader.GUI.Models
+@using System.Diagnostics;
+@using System.IO;
+
 
 <h3>Home</h3>
 
@@ -21,9 +24,14 @@
         <HxInputText Enabled="false" @bind-Value="@_selectedFile.title" Label="Title"></HxInputText>
         <HxInputText Enabled="false" @bind-Value="@_selectedFile.path" Label="File path"></HxInputText>
         <HxInputText Enabled="false" @bind-Value="@_selectedFile.cartridgeType" Label="Cartridge type"></HxInputText>
+
+        @if (_launchError != "")
+        {
+            <p>@_launchError</p>
+        }
     </BodyTemplate>
     <FooterTemplate>
-        
+        <HxButton Color="ThemeColor.Primary" OnClick="() => LaunchEmulator(_selectedFile.path)">Launch game</HxButton>
     </FooterTemplate>
 </HxModal>
 
@@ -33,6 +41,11 @@
     private List<DumpFile> _dumpFiles = new();
     private HxModal _fileModal = new();
     protected DumpFile _selectedFile = new();
+
+    static string appBaseFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "GameBoyReader");
+    string emuFolder = Path.Combine(appBaseFolder, "emu");
+
+    string _launchError = "";
 
     protected override async Task OnInitializedAsync()
     {
@@ -70,5 +83,27 @@
     {
         _selectedFile = new();
         await _fileModal.HideAsync();
+    }
+
+    private bool IsEmulatorPresent()
+    {
+        return (File.Exists(Path.Combine(emuFolder, "Gearboy.exe")) && File.Exists(Path.Combine(emuFolder, "SDL2.dll")));
+    }
+
+    private void LaunchEmulator(string filePath)
+    {
+        try
+        {
+            Process.Start(new ProcessStartInfo
+                {
+                    FileName = Path.Combine(emuFolder, "Gearboy.exe"),
+                    Arguments = filePath,
+                    UseShellExecute = true
+                });
+        }
+        catch (Exception e)
+        {
+            _launchError = e.Message;
+        }
     }
 }
