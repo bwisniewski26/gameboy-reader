@@ -7,7 +7,7 @@
 
     <h3>This page allows you to connect to GameBoy Reader device. Choose COM port where your device is connected and press 'Connect'.</h3>
     <h4>Connection status: <span class="@GetConnectionClass()">@RetrieveConnectionStatus()</span></h4>
-    <div class="connection-control-buttons d-flex align-items-center gap-2">
+    <div class="connection-control-buttons d-flex align-items-center gap-4">
         <HxDropdownButtonGroup OnShown="RefreshPorts" class="fixed-dropdown">
             <HxDropdownToggleButton Color="ThemeColor.Primary" Enabled="@PortPickerEnabled()">@_pickedPort</HxDropdownToggleButton>
             <HxDropdownMenu>
@@ -33,7 +33,7 @@
     private ArduinoSerialClient _serialClient = new();
     private string _pickedPort = ConnectionService.IsConnectionEstablished ? ConnectionService.SerialPort.PortName : "Found ports";
     private string _errorMessage = "";
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
     {
         var ports = _serialClient.RetrieveAvailableCOMPorts();
         _comPorts.Clear();

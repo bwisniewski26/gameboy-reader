@@ -2,6 +2,7 @@
 @using GameBoyReader.Core.Enums
 @using GameBoyReader.Core.Models
 @using GameBoyReader.Core.Services
+@using GameBoyReader.Core.Utils
 @using GameBoyReader.GUI.Models
 
 <h3>Home</h3>
@@ -9,16 +10,29 @@
 <div class="cartridge-grid">
     @foreach (var file in _dumpFiles)
     {
-        <DumpedCartridge Name="@file.title" />
+        <div @onclick="@(() => SelectFile(file))" style="cursor: pointer;">
+            <DumpedCartridge Name="@file.title" />
+        </div>
     }
 </div>
+
+<HxModal @ref="_fileModal" Title="@(_selectedFile.title)">
+    <BodyTemplate>
+        <HxInputText Enabled="false" @bind-Value="@_selectedFile.title" Label="Title"></HxInputText>
+        <HxInputText Enabled="false" @bind-Value="@_selectedFile.path" Label="File path"></HxInputText>
+        <HxInputText Enabled="false" @bind-Value="@_selectedFile.cartridgeType" Label="Cartridge type"></HxInputText>
+    </BodyTemplate>
+    <FooterTemplate>
+        
+    </FooterTemplate>
+</HxModal>
 
 @code {
     CartridgeByteContentService cartridgeByteContentService = new();
 
     private List<DumpFile> _dumpFiles = new();
-
-    string 
+    private HxModal _fileModal = new();
+    protected DumpFile _selectedFile = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -44,5 +58,17 @@
                 }
             }
         }
+    }
+
+    private async Task SelectFile(DumpFile file)
+    {
+        _selectedFile = file;
+        await _fileModal.ShowAsync();
+    }
+
+    private async Task HideFileModal()
+    {
+        _selectedFile = new();
+        await _fileModal.HideAsync();
     }
 }

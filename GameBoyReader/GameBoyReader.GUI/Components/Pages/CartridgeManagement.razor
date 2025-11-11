@@ -36,19 +36,10 @@
     <h2>Cartridge information</h2>
     <HxButton Color="ThemeColor.Primary" OnClick="RetrieveCartridgeInformation" Enabled="ConnectionService.IsConnectionEstablished && !_isOperationRunning">Retrieve cartridge information</HxButton>
     <div class="dump-result">
-        @if (_showCartridgeInformation)
-        {
-            <p>Game title: @_information.Name</p>
-            <p>Cartridge type: @CartridgeTypeConverter.ConvertFromCartridgeTypeToString(_information.Type)</p>
-            <p>ROM Size: @(32 * 1024 * (1 << _information.ROMSize))B</p>
-            <p>RAM Size: @(_information.RAMSize)KB</p>
-        } else
-        {
-            <p>Game title:</p>
-            <p>Cartridge type:</p>
-            <p>ROM Size:</p>
-            <p>RAM Size:</p>
-        }
+       <p>Game title: @_cartridgeInformation.Name</p>
+       <p>Cartridge type: @CartridgeTypeConverter.ConvertFromCartridgeTypeToString(_cartridgeInformation.Type)</p>
+       <p>ROM Size: @(32 * 1024 * (1 << _cartridgeInformation.ROMSize))B</p>
+       <p>RAM Size: @(_cartridgeInformation.RAMSize)KB</p>
     </div>
 </div>
 
@@ -87,7 +78,10 @@
         }
     </BodyTemplate>
 	<FooterTemplate>
-        <HxButton Color="ThemeColor.Secondary">Verify selected file</HxButton>
+        @if (_dumpType == DumpOperationType.RAM)
+        {
+            <HxButton Color="ThemeColor.Secondary">Verify selected file</HxButton>
+        }
         <HxButton Color="ThemeColor.Success" OnClick="@SaveDumpedData">Save</HxButton>
         <HxButton Color="ThemeColor.Danger" OnClick="@CancelDumpSave">Cancel</HxButton>
     </FooterTemplate>
@@ -107,7 +101,7 @@
         }
     </BodyTemplate>
     <FooterTemplate>
-        <HxButton Color="ThemeColor.Warning" OnClick="@VerifySelectedFile">Verify file again</HxButton>
+        <HxButton Color="ThemeColor.Warning" OnClick="@VerifySelectedFile"></HxButton>
         <HxButton Color="ThemeColor.Success" OnClick="@WriteSelectedFile" Enabled="_isFileVerified">Write</HxButton>
         <HxButton Color="ThemeColor.Danger" OnClick="@CancelWrite">Cancel</HxButton>
     </FooterTemplate>
@@ -117,20 +111,17 @@
     private static CartridgePreparationService _cartridgePreparationService = new();
     private static CartridgeDumperService _cartridgeDumper = new();
 
-    private CartridgeInformation _information = new();
+    private CartridgeInformation _cartridgeInformation = new();
     private RetrievedBitmap _retrievedBitmap = new();
     private CartridgeContent _cartridgeContent = new();
     private CartridgeRAMContent _cartridgeRAMContent = new();
-    private byte[] _selectedRAMFileContent;
+    private byte[] _selectedRAMFileContent = new byte[1];
 
     private HxModal _saveDumpModal = new();
     private HxModal _writeRAMModal = new();
 
     private bool _isOperationRunning = false;
-    private bool _showCartridgeInformation = false;
     private bool _showRetrievedBitmap = false;
-    private bool _showSaveROMModal = false;
-    private bool _showSaveRAMModal = false;
     private bool _isFileVerified = false;
 
     private string _fileName = "game_dump";
@@ -140,19 +131,12 @@
     private string _writeRAMMessage = "";
     private string _writeRAMError = "";
 
-    private enum DumpOperationType
-    {
-        ROM,
-        RAM
-    }
-
-    private DumpOperationType _dumpType = DumpOperationType.ROM;
+    public DumpOperationType _dumpType = DumpOperationType.ROM;
 
     private async Task RetrieveCartridgeInformation()
     {
         SwitchEnablingOperations();
-        _information = await _cartridgePreparationService.RetrieveCartridgeInformation();
-        _showCartridgeInformation = true;
+        _cartridgeInformation = await _cartridgePreparationService.RetrieveCartridgeInformation();
         SwitchEnablingOperations();
     }
 
