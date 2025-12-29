@@ -76,6 +76,10 @@
         {
             <p class="dump-error">@_saveErrorMessage</p>
         }
+        @if (_checksumFailWarning != "")
+        {
+            <p class="dump-error">@_checksumFailWarning</p>
+        }
     </BodyTemplate>
 	<FooterTemplate>
         @if (_dumpType == DumpOperationType.RAM)
@@ -109,7 +113,8 @@
 
 @code {
     private static CartridgePreparationService _cartridgePreparationService = new();
-    private static CartridgeDumperService _cartridgeDumper = new();
+    private static CartridgeDumperService _cartridgeDumperService = new();
+    private static CartridgeByteContentService _cartridgeByteContentService = new();
 
     private CartridgeInformation _cartridgeInformation = new();
     private RetrievedBitmap _retrievedBitmap = new();
@@ -127,6 +132,7 @@
     private string _fileName = "game_dump";
     private string _saveReturnMessage = "";
     private string _saveErrorMessage = "";
+    private string _checksumFailWarning = "";
     private string _dumpRAMError = "";
     private string _writeRAMMessage = "";
     private string _writeRAMError = "";
@@ -152,7 +158,17 @@
     {
         SwitchEnablingOperations();
         _dumpType = DumpOperationType.ROM;
-        _cartridgeContent = await _cartridgeDumper.DumpCartridge();
+        _retrievedBitmap = await _cartridgePreparationService.ValidateBootBitmap();
+        _cartridgeContent = await _cartridgeDumperService.DumpCartridge();
+        _checksumFailWarning = "";
+        if (!_cartridgeByteContentService.CalculateHeaderChecksum(_cartridgeContent.CartridgeByteContent))
+        {
+            _checksumFailWarning += "Cartridge header checksum check has failed. Your dump may be corrupted.\n";
+        }
+        if (!_retrievedBitmap.IsBitmapCorrect)
+        {
+            _checksumFailWarning += "Cartridge header boot bitmap is incorrect. Your dump may be corrupted.";
+        }
         await _saveDumpModal.ShowAsync();
         SwitchEnablingOperations();
     }
@@ -163,7 +179,7 @@
         if (await VerifyCartridgeRAMPresence(true))
         {
             _dumpType = DumpOperationType.RAM;
-            _cartridgeRAMContent = await _cartridgeDumper.DumpCartridgeRAM();
+            _cartridgeRAMContent = await _cartridgeDumperService.DumpCartridgeRAM();
             await _saveDumpModal.ShowAsync();       
         }
         SwitchEnablingOperations();
@@ -173,7 +189,7 @@
     {
         int ramSize = await GetRAMSize();
         CartridgeType cartridgeType = await _cartridgePreparationService.RetrieveCartridgeType();
-        if (ramSize == 0 && (cartridgeType != CartridgeType.MBC2 || cartridgeType != CartridgeType.MBC2_BATTERY))
+        if (ramSize == 0 && (cartridgeType != CartridgeType.MBC2 && cartridgeType != CartridgeType.MBC2_BATTERY))
         {
             if (isDumpingRom) _dumpRAMError = "This cartridge does not have RAM memory built in. Please insert different cartridge to use this tool.";
             return false;
@@ -185,12 +201,31 @@
     {
         return await _cartridgePreparationService.RetrieveRAMSize();
     }
+    private async Task<CartridgeType> GetCartridgeType()
+    {
+        return await _cartridgePreparationService.RetrieveCartridgeType();
+
+    }
+
+    private bool DoesContainForbiddenCharacters(string name)
+    {
+        return name.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0;
+    }
 
     private async Task SaveDumpedData()
     {
+        _saveReturnMessage = "";
         if (_fileName == "" || _fileName == null)
         {
             _saveReturnMessage = "File name cannot be empty.";
+            if (_fileName == null) return;
+        }
+        if (DoesContainForbiddenCharacters(_fileName))
+        {
+            _saveReturnMessage += "\nFile name contains forbidden characters.";
+        }
+        if (_saveReturnMessage.Length > 0)
+        {
             return;
         }
         switch (_dumpType)
@@ -223,7 +258,7 @@
         }
         catch (Exception ex)
         {
-            _saveErrorMessage = ex.Message;
+            _saveErrorMessage += ex.Message;
         }
         await _saveDumpModal.HideAsync();
         SetVariablesToDefault();
@@ -256,21 +291,31 @@
     {
         if (await VerifyCartridgeRAMPresence())
         {
-            int expectedSize = await GetRAMSize();
-            expectedSize *= 1024;
+            int expectedSize;
+            CartridgeType cartridgeType = await GetCartridgeType();
+            if (cartridgeType == CartridgeType.MBC2 || cartridgeType == CartridgeType.MBC2_BATTERY)
+            {
+                expectedSize = 512;
+            }
+            else
+            {
+                expectedSize = await GetRAMSize() * 1024;
+            }
             if (expectedSize == _selectedRAMFileContent.Count())
             {
                 _isFileVerified = true;
                 _writeRAMMessage = "This file has been verified successfully.";
                 _writeRAMError = "";
                 return;
-            } else
+            }
+            else
             {
                 _isFileVerified = false;
                 _writeRAMMessage = "";
                 _writeRAMError = "RAM size and selected file size are different. Choose another file.";
             }
-        } else
+        }
+        else
         {
             _isFileVerified = false;
             _writeRAMMessage = "";
@@ -281,7 +326,7 @@
 
     private async Task WriteSelectedFile()
     {
-        await _cartridgeDumper.WriteCartridgeRAM(_selectedRAMFileContent);
+        await _cartridgeDumperService.WriteCartridgeRAM(_selectedRAMFileContent);
         await _writeRAMModal.HideAsync();
         SetVariablesToDefault();
     }

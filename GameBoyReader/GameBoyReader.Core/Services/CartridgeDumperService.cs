@@ -24,30 +24,7 @@ namespace GameBoyReader.Core.Services
                     await Task.Delay(500);
                 }
                 cartridgeContent.CartridgeInformation = await _preparationService.RetrieveCartridgeInformation(comPort);
-                switch (cartridgeContent.CartridgeInformation.Type)
-                {
-                    case CartridgeType.MBC0:
-                        cartridgeContent.CartridgeByteContent = await _serialClient.RetrieveBytes("DUMP_MBC0");
-                        break;
-                    case CartridgeType.MBC1:
-                    case CartridgeType.MBC1_RAM:
-                    case CartridgeType.MBC1_RAM_BATTERY:
-                        cartridgeContent.CartridgeByteContent = await _serialClient.RetrieveBytes("DUMP_MBC1");
-                        break;
-                    case CartridgeType.MBC2:
-                    case CartridgeType.MBC2_BATTERY:
-                        cartridgeContent.CartridgeByteContent = await _serialClient.RetrieveBytes("DUMP_MBC2");
-                        break;
-                    case CartridgeType.MBC3:
-                    case CartridgeType.MBC3_RAM_BATTERY:
-                    case CartridgeType.MBC3_TIMER_RAM_BATTERY:
-                    case CartridgeType.MBC3_TIMER_BATTERY:
-                    case CartridgeType.MBC3_RAM:
-                        cartridgeContent.CartridgeByteContent = await _serialClient.RetrieveBytes("DUMP_MBC3");
-                        break;
-                    default:
-                        throw new CartridgeNotSupportedException();
-                }
+                cartridgeContent.CartridgeByteContent = await _serialClient.RetrieveBytes("DUMP_ROM");
             }
             catch (Exception e)
             {

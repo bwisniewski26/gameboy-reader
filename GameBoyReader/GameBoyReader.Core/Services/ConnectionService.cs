@@ -10,7 +10,7 @@ namespace GameBoyReader.Core.Services
 
         public static async Task StartConnection(string comPort)
         {
-            SerialPort = new SerialPort(comPort, 74480);
+            SerialPort = new SerialPort(comPort, 115200);
             SerialPort.ReadBufferSize = 65536;
             SerialPort.WriteBufferSize = 4096;
             SerialPort.Open();

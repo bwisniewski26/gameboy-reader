@@ -10,11 +10,10 @@ namespace GameBoyReader.CLI.Actions
         {
             if (!ConnectionService.IsConnectionEstablished)
             {
-                COMPortPicker.TerminalCOMPortPicker();
+                await COMPortPicker.TerminalCOMPortPicker();
             }
             RetrievedBitmap result = await cartridgeService.ValidateBootBitmap();
-            Console.WriteLine("");
-            Console.WriteLine("Received data:");
+            Console.WriteLine("\nReceived data:");
             foreach (var bit in result.Bitmap)
             {
                 Console.Write(bit);
@@ -30,7 +29,7 @@ namespace GameBoyReader.CLI.Actions
             }
             else
             {
-                Console.WriteLine("Received boot bitmap was incorrect.");
+                Console.WriteLine("\nReceived boot bitmap was incorrect.");
             }
         }
 

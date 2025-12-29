@@ -20,5 +20,23 @@ namespace GameBoyReader.Core.Services
         {
             return Encoding.ASCII.GetString(byteContent, 0x134, 16);
         }
+
+        public bool CalculateHeaderChecksum(List<byte> byteContent)
+        {
+            if (byteContent == null || byteContent.Count <= 0x014D)
+                return false;
+
+            int checksum = 0;
+
+            for (int address = 0x0134; address <= 0x014C; address++)
+            {
+                checksum = checksum - byteContent[address] - 1;
+            }
+
+            byte calculatedChecksum = (byte)checksum;
+            byte headerChecksum = byteContent[0x014D];
+
+            return calculatedChecksum == headerChecksum;
+        }
     }
 }

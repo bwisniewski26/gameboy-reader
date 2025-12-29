@@ -30,7 +30,7 @@ namespace GameBoyReader.CLI
                 switch (selectedIndex)
                 {
                     case 0:
-                        COMPortPicker.TerminalCOMPortPicker();
+                        await COMPortPicker.TerminalCOMPortPicker();
                         Console.WriteLine("Press any button to return.");
                         Console.ReadKey();
                         break;

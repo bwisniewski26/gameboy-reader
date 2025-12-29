@@ -210,7 +210,7 @@ void dumpROMWithBanks(uint32_t romSize, uint8_t mbcType)
     switch(mbcType)
     {
         case 0x00: case 0x08: case 0x09: // MBC0
-            bankCount = 1; // tylko bank 0
+            bankCount = 1;
             break;
         case 0x01: case 0x02: case 0x03: // MBC1
             useBankSwitch = true;

@@ -5,7 +5,7 @@ namespace GameBoyReader.CLI.Actions
     public static class COMPortPicker
     {
         private static ArduinoSerialClient arduinoClient = new();
-        public static async void TerminalCOMPortPicker()
+        public static async Task TerminalCOMPortPicker()
         {
             var options = arduinoClient.RetrieveAvailableCOMPorts();
             options.Add("Back");
