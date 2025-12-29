@@ -252,13 +252,15 @@ void dumpROMWithBanks(uint32_t romSize, uint8_t mbcType)
             switchBank(bankNumber);
             dumpROM(0x4000, 0x4000);
           }
-        } else { // pozostałe MBC
+        } else { // other MBCs
           for (uint16_t bankNumber = 1; bankNumber < bankCount; bankNumber++)
           {
             switchBank(bankNumber);
             dumpROM(0x4000, startAddr);
           }
         }
+    } else { // no MBC present
+        dumpROM(0x4000, 0x4000);
     }
 
     Serial.println("END");
@@ -286,6 +288,12 @@ void dumpRAM() {
 
     Serial.println("START");
     Serial.flush();
+
+    // MBC2 RAM compatiblity
+    if (mbcType == 0x05 || mbcType == 0x06) {
+      dumpMBC2RAM();
+      return;
+    }
 
     switch(ramSize) {
         case 0:
@@ -372,6 +380,40 @@ void dumpRAM() {
     Serial.flush();
 }
 
+void dumpMBC2RAM()
+{
+  writeByte(0x0A, 0x0000);
+  delayMicroseconds(50);
+
+  for (uint16_t addr = 0xA000; addr <= 0xA1FF; addr++) {
+    uint8_t data = readByte(addr);
+    data &= 0x0F;
+    Serial.write(data);
+  }
+  Serial.println("END");
+  Serial.flush();
+}
+
+void writeMBC2RAM()
+{
+  writeByte(0x0A, 0x0000);
+  delayMicroseconds(50);
+
+  while (!Serial.find("START")) { ; }
+
+    uint32_t address = 0;
+    uint8_t currentBank = 0xFF;
+
+    while (address < 512) {
+        if (Serial.available()) {
+            uint8_t data = Serial.read() & 0x0F;
+            writeByte(data, 0xA000 + (address & 0x01FF));
+            address++;
+        }
+    }
+    while (!Serial.find("END")) { ; }
+}
+
 int ValidCheckSum()
 {
   int checksum = 0;
@@ -394,6 +436,11 @@ void saveRAMToCart() {
     uint32_t ramBankCount = 0;
     uint16_t ramBankSize = 8192; 
     uint32_t ramSizeBytes = 0;
+
+    if (mbcType == 0x05 || mbcType == 0x06)
+    {
+      writeMBC2RAM();
+    }
 
     switch(ramSize) {
         case 0: ramBankCount = 0; ramSizeBytes = 0; break;
@@ -475,19 +522,7 @@ void loop()
       {
         dumpTitle();
       }
-      else if (command == "DUMP_MBC0")
-      {
-        dumpROMWithBanks(calculateROMAddressCount(), getMBCType());
-      }
-      else if (command == "DUMP_MBC1")
-      {
-        dumpROMWithBanks(calculateROMAddressCount(), getMBCType());
-      } else if (command == "DUMP_MBC2")
-      {
-        dumpROMWithBanks(calculateROMAddressCount(), getMBCType());
-      }
-      else if (command == "DUMP_MBC3")
-      {
+      else if (command == "DUMP_ROM") {
         dumpROMWithBanks(calculateROMAddressCount(), getMBCType());
       } else if (command == "DUMP_RAM")
       {
