@@ -1,4 +1,5 @@
-﻿using GameBoyReader.Core.Models;
+﻿using GameBoyReader.Core.Enums;
+using GameBoyReader.Core.Models;
 
 namespace GameBoyReader.Core.Services
 {
@@ -8,6 +9,8 @@ namespace GameBoyReader.Core.Services
         public Task<CartridgeInformation> RetrieveCartridgeInformation(string? comPort = null);
 
         public Task<int> RetrieveRAMSize();
+
+        public Task<CartridgeType> RetrieveCartridgeType();
         
     }
 }

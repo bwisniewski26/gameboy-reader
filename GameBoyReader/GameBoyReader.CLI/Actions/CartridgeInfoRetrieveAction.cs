@@ -1,12 +1,6 @@
 ﻿using GameBoyReader.Core.Models;
 using GameBoyReader.Core.Services;
-using GameBoyReader.Core.States;
 using GameBoyReader.Core.Utils;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace GameBoyReader.CLI.Actions
 {
@@ -16,9 +10,9 @@ namespace GameBoyReader.CLI.Actions
         private static CartridgePreparationService cartridgeService = new();
         public async static Task DisplayCartridgeInfo()
         {
-            if (!ConnectionStatus.IsConnectionEstablished)
+            if (!ConnectionService.IsConnectionEstablished)
             {
-                COMPortPicker.TerminalCOMPortPicker();
+                await COMPortPicker.TerminalCOMPortPicker();
             }
             CartridgeInformation information = await cartridgeService.RetrieveCartridgeInformation();
 

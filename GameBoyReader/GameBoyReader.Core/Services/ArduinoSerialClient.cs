@@ -1,8 +1,6 @@
 ﻿using GameBoyReader.Core.Exceptions;
-using GameBoyReader.Core.States;
 using System.IO.Ports;
 using System.Text;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace GameBoyReader.Core.Services
 {
@@ -15,13 +13,13 @@ namespace GameBoyReader.Core.Services
 
         public async Task<List<Byte>> RetrieveBytes(string readerCommand)
         {
-            if (ConnectionStatus.SerialPort == null)
+            if (ConnectionService.SerialPort == null)
                 throw new SerialConnectionException();
 
             List<byte> readResult = new();
-            ConnectionStatus.SerialPort.ReadTimeout = 1000;
+            ConnectionService.SerialPort.ReadTimeout = 1000;
             await Task.Delay(200);
-            ConnectionStatus.SerialPort.WriteLine(readerCommand);
+            ConnectionService.SerialPort.WriteLine(readerCommand);
 
             const int bufferSize = 256;
             byte[] buffer = new byte[bufferSize];
@@ -34,7 +32,7 @@ namespace GameBoyReader.Core.Services
                 int bytesRead;
                 try
                 {
-                    bytesRead = await Task.Run(() => ConnectionStatus.SerialPort.Read(buffer, 0, bufferSize));
+                    bytesRead = await Task.Run(() => ConnectionService.SerialPort.Read(buffer, 0, bufferSize));
                 }
                 catch (TimeoutException)
                 {
@@ -85,27 +83,27 @@ namespace GameBoyReader.Core.Services
 
         public async Task SendBytes(string readerCommand, byte[] bytes)
         {
-            if (ConnectionStatus.SerialPort == null)
+            if (ConnectionService.SerialPort == null)
                 throw new SerialConnectionException();
 
-            ConnectionStatus.SerialPort.ReadTimeout = 1000;
+            ConnectionService.SerialPort.ReadTimeout = 1000;
 
             await Task.Delay(200);
-            ConnectionStatus.SerialPort.WriteLine(readerCommand);
+            ConnectionService.SerialPort.WriteLine(readerCommand);
             await Task.Delay(200);
 
-            ConnectionStatus.SerialPort.Write("START");
+            ConnectionService.SerialPort.Write("START");
             await Task.Delay(200);
 
             int blockSize = 1;
             for (int i = 0; i < bytes.Length; i += blockSize)
             {
                 int len = Math.Min(blockSize, bytes.Length - i);
-                ConnectionStatus.SerialPort.Write(bytes, i, 1);
+                ConnectionService.SerialPort.Write(bytes, i, 1);
             }
 
             await Task.Delay(200);
-            ConnectionStatus.SerialPort.Write("END");
+            ConnectionService.SerialPort.Write("END");
         }
     }
 }

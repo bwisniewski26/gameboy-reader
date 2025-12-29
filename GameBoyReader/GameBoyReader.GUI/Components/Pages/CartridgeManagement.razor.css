@@ -1,0 +1,38 @@
+﻿body {
+}
+.connection-setup-href {
+    font-weight: bold;
+    text-decoration: none;
+}
+
+.connection-setup-warning {
+    background-color: rgb(45, 45, 60);
+    color: white;
+    border: 0.1rem solid #ccc;
+    border-radius: 0.5rem;
+    margin: 1.5rem;
+    padding: 0.5rem;
+}
+
+.page-content-container {
+    background-color: rgb(45, 45, 60);
+    color: white;
+    border: 0.1rem solid #ccc;
+    border-radius: 0.5rem;
+    min-height: 150px;
+    padding: 0.5rem;
+    margin: 1.5rem;
+}
+
+.dump-result {
+    font-size: large;
+    margin: 0.5rem;
+}
+
+.dump-error {
+    color: red;
+}
+
+.dump-success {
+    color: limegreen;
+}

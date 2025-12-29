@@ -1,0 +1,109 @@
+﻿@page "/"
+@using GameBoyReader.Core.Enums
+@using GameBoyReader.Core.Models
+@using GameBoyReader.Core.Services
+@using GameBoyReader.Core.Utils
+@using GameBoyReader.GUI.Models
+@using System.Diagnostics;
+@using System.IO;
+
+
+<h3>Home</h3>
+
+<div class="cartridge-grid">
+    @foreach (var file in _dumpFiles)
+    {
+        <div @onclick="@(() => SelectFile(file))" style="cursor: pointer;">
+            <DumpedCartridge Name="@file.title" />
+        </div>
+    }
+</div>
+
+<HxModal @ref="_fileModal" Title="@(_selectedFile.title)">
+    <BodyTemplate>
+        <HxInputText Enabled="false" @bind-Value="@_selectedFile.title" Label="Title"></HxInputText>
+        <HxInputText Enabled="false" @bind-Value="@_selectedFile.path" Label="File path"></HxInputText>
+        <HxInputText Enabled="false" @bind-Value="@_selectedFile.cartridgeType" Label="Cartridge type"></HxInputText>
+
+        @if (_launchError != "")
+        {
+            <p>@_launchError</p>
+        }
+    </BodyTemplate>
+    <FooterTemplate>
+        <HxButton Color="ThemeColor.Primary" OnClick="() => LaunchEmulator(_selectedFile.path)">Launch game</HxButton>
+    </FooterTemplate>
+</HxModal>
+
+@code {
+    CartridgeByteContentService cartridgeByteContentService = new();
+
+    private List<DumpFile> _dumpFiles = new();
+    private HxModal _fileModal = new();
+    protected DumpFile _selectedFile = new();
+
+    static string appBaseFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "GameBoyReader");
+    string emuFolder = Path.Combine(appBaseFolder, "emu");
+
+    string _launchError = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        var folderPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "GameBoyReader");
+        var files = Directory.GetFiles(folderPath);
+
+        foreach (var file in files)
+        {
+            if (file.EndsWith(".gb", StringComparison.OrdinalIgnoreCase))
+            {
+                try
+                {
+                    var byteContent = await File.ReadAllBytesAsync(file);
+                    string title = cartridgeByteContentService.RetrieveGameName(byteContent);
+                    CartridgeType type = cartridgeByteContentService.RetrieveCartridgeType(byteContent);
+
+                    DumpFile dumpedFileInformation = new(title, type, file);
+                    _dumpFiles.Add(dumpedFileInformation);
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine($"Failed to read {file}: {e.Message}");
+                }
+            }
+        }
+    }
+
+    private async Task SelectFile(DumpFile file)
+    {
+        _selectedFile = file;
+        await _fileModal.ShowAsync();
+    }
+
+    private async Task HideFileModal()
+    {
+        _selectedFile = new();
+        await _fileModal.HideAsync();
+    }
+
+    private bool IsEmulatorPresent()
+    {
+        return (File.Exists(Path.Combine(emuFolder, "Gearboy.exe")) && File.Exists(Path.Combine(emuFolder, "SDL2.dll")));
+    }
+
+    private void LaunchEmulator(string filePath)
+    {
+        try
+        {
+            Process.Start(new ProcessStartInfo
+                {
+                    FileName = Path.Combine(emuFolder, "Gearboy.exe"),
+                    Arguments = filePath,
+                    UseShellExecute = true
+                });
+        }
+        catch (Exception e)
+        {
+            _launchError = e.Message;
+        }
+    }
+}

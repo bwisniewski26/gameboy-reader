@@ -1,6 +1,6 @@
-﻿using GameBoyReader.Core.Exceptions;
+﻿using GameBoyReader.Core.Enums;
+using GameBoyReader.Core.Exceptions;
 using GameBoyReader.Core.Models;
-using GameBoyReader.Core.States;
 using GameBoyReader.Core.Utils;
 using System.Text;
 
@@ -16,13 +16,13 @@ namespace GameBoyReader.Core.Services
             try
             {
 
-                if (!ConnectionStatus.IsConnectionEstablished)
+                if (!ConnectionService.IsConnectionEstablished)
                 {
                     if (comPort == null)
                     {
                         throw new SerialConnectionException();
                     }
-                    await ConnectionStatus.StartConnection(comPort);
+                    await ConnectionService.StartConnection(comPort);
                     await Task.Delay(500);
                 }
 
@@ -36,7 +36,7 @@ namespace GameBoyReader.Core.Services
                 information.ROMSize = romSizeBytes.First();
 
                 var ramSizeBytes = await arduinoClient.RetrieveBytes("GET_RAM_SIZE");
-                information.RAMSize = ramSizeBytes.First();
+                information.RAMSize = ConvertRAMSize(ramSizeBytes.First());
 
             }
             catch (Exception e)
@@ -47,10 +47,9 @@ namespace GameBoyReader.Core.Services
             return information;
         }
 
-        public async Task<int> RetrieveRAMSize()
+        private int ConvertRAMSize(byte input)
         {
-            CartridgeInformation cartridgeInformation = await RetrieveCartridgeInformation();
-            switch (cartridgeInformation.RAMSize)
+            switch (input)
             {
                 case 0:
                     return 0;
@@ -69,18 +68,24 @@ namespace GameBoyReader.Core.Services
             }
         }
 
+        public async Task<int> RetrieveRAMSize()
+        {
+            CartridgeInformation cartridgeInformation = await RetrieveCartridgeInformation();
+            return cartridgeInformation.RAMSize;
+        }
+
         public async Task<RetrievedBitmap> ValidateBootBitmap(string? comPort = null)
         {
             RetrievedBitmap retrievedBitmap = new();
             try
             {
-                if (!ConnectionStatus.IsConnectionEstablished)
+                if (!ConnectionService.IsConnectionEstablished)
                 {
                     if (comPort == null)
                     {
                         throw new SerialConnectionException();
                     }
-                    await ConnectionStatus.StartConnection(comPort);
+                    await ConnectionService.StartConnection(comPort);
                     await Task.Delay(500);
                 }
                 retrievedBitmap.Bitmap = await arduinoClient.RetrieveBytes("GET_HEADER");
@@ -95,5 +100,10 @@ namespace GameBoyReader.Core.Services
             return retrievedBitmap;
         }
 
+        public async Task<CartridgeType> RetrieveCartridgeType()
+        {
+            var mbcBytes = await arduinoClient.RetrieveBytes("GET_MBC");
+            return CartridgeTypeConverter.ConvertFromByte(mbcBytes.First());
+        }
     }
 }

@@ -1,7 +1,6 @@
 ﻿using GameBoyReader.Core.Services;
 using GameBoyReader.CLI.Actions;
 using System.IO.Ports;
-using GameBoyReader.Core.States;
 
 namespace GameBoyReader.CLI
 {
@@ -20,7 +19,7 @@ namespace GameBoyReader.CLI
 
             Console.CancelKeyPress += (sender, eventArgs) =>
             {
-                Console.WriteLine("Ctrl+C pressed. Cleaning up...");
+                Console.WriteLine("SIGINT signal received. This app will shutdown. Cleaning up...");
                 OnProcessExit(sender, eventArgs);
             };
 
@@ -31,7 +30,7 @@ namespace GameBoyReader.CLI
                 switch (selectedIndex)
                 {
                     case 0:
-                        COMPortPicker.TerminalCOMPortPicker();
+                        await COMPortPicker.TerminalCOMPortPicker();
                         Console.WriteLine("Press any button to return.");
                         Console.ReadKey();
                         break;
@@ -70,10 +69,10 @@ namespace GameBoyReader.CLI
         static void OnProcessExit(object? sender, EventArgs e)
         {
             Console.WriteLine("Exiting GameBoy Reader...");
-            if (ConnectionStatus.SerialPort != null)
+            if (ConnectionService.SerialPort != null)
             {
                 Console.WriteLine("Closing port...");
-                ConnectionStatus.SerialPort.Close();
+                ConnectionService.SerialPort.Close();
             }
         }
 
@@ -93,7 +92,7 @@ namespace GameBoyReader.CLI
                     Console.Clear();
                     Console.SetCursorPosition(x, 0);
                     Console.WriteLine(title);
-                    Console.WriteLine($"Is COM connection establised: {ConnectionStatus.IsConnectionEstablished}");
+                    Console.WriteLine($"Is COM connection establised: {ConnectionService.IsConnectionEstablished}");
                     for (int i = 0; i < options.Length; i++)
                     {
                         if (i == selectedIndex)

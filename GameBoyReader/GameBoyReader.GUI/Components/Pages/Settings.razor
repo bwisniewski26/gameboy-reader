@@ -1,0 +1,166 @@
+﻿@page "/connection_setup"
+@using GameBoyReader.Core.Services
+@using System.Collections.ObjectModel
+@using System.IO.Compression;
+
+<h1>Settings</h1>
+<div class="page-content-container">
+    <h2>Connection Settings</h2>
+    <h3>This tool allows you to connect to GameBoy Reader device. Choose COM port where your device is connected and press 'Connect'.</h3>
+    <h4>Connection status: <span class="@GetConnectionClass()">@RetrieveConnectionStatus()</span></h4>
+    <div class="connection-control-buttons d-flex align-items-center gap-4">
+        <HxDropdownButtonGroup OnShown="RefreshPorts" class="fixed-dropdown">
+            <HxDropdownToggleButton Color="ThemeColor.Primary" Enabled="@PortPickerEnabled()">@_pickedPort</HxDropdownToggleButton>
+            <HxDropdownMenu>
+                @foreach (var port in _comPorts)
+                {
+                    <HxDropdownItem OnClick="() => HandleDropdownItemClick(port)" >@port</HxDropdownItem>
+                }
+            </HxDropdownMenu>
+
+        </HxDropdownButtonGroup>
+
+        <HxButton OnClick="Connect" Color="ThemeColor.Success" Enabled="@ConnectButtonEnabled()">Connect to device</HxButton> <HxButton OnClick="Disconnect" Color="ThemeColor.Danger" Enabled="@DisconnectButtonEnabled()">Disconnect from device</HxButton>
+    </div>
+
+    @if (!(@_errorMessage == ""))
+    {
+        <h3 class="error-message">@_errorMessage</h3>
+    }
+</div>
+
+<div class="page-content-container">
+    <h2>Emulator download</h2>
+    <h3>This tool allows you to download open-source emulator to open your dumped games straight from this app. It can also redownload it if needed.</h3>
+    <p>Emulator downloaded by this tool is <a href="https://github.com/drhelius/Gearboy">Gearboy</a> made by <a href="https://github.com/drhelius">drhelius</a> distributed on GPL-3.0 license.</p>
+    <p>Is emulator downloaded: <span class="@GetEmulatorPresenceClass()">@RetrieveEmulatorPresence()</span></p>
+    <div class="connection-control-buttons d-flex align-items-center gap-4">
+        <HxButton OnClick="DownloadEmulator" Color="ThemeColor.Success">Download emulator</HxButton>
+    </div>
+
+    @if (!(@_downloadError == ""))
+    {
+        <h3 class="error-message">@_downloadError</h3>
+    }
+</div>
+
+@code {
+    private ObservableCollection<string> _comPorts = new ObservableCollection<string>();
+    private ArduinoSerialClient _serialClient = new();
+    private string _pickedPort = ConnectionService.IsConnectionEstablished ? ConnectionService.SerialPort.PortName : "Found ports";
+    private string _errorMessage = "";
+    private string _downloadError = "";
+
+    static string appBaseFolder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "GameBoyReader");
+    string emuFolder = Path.Combine(appBaseFolder, "emu");
+
+
+    protected override void OnInitialized()
+    {
+        var ports = _serialClient.RetrieveAvailableCOMPorts();
+        _comPorts.Clear();
+        foreach (var port in ports)
+        {
+            _comPorts.Add(port);
+        }
+
+        if (!Directory.Exists(Path.Combine(appBaseFolder, "emu")))
+        {
+            Directory.CreateDirectory(Path.Combine(appBaseFolder, "emu"));
+        }
+    }
+
+    private string GetConnectionClass()
+    {
+        return ConnectionService.IsConnectionEstablished
+            ? "device-connected"
+            : "device-disconnected";
+    }
+
+    private string RetrieveConnectionStatus()
+    {
+        return ConnectionService.IsConnectionEstablished ? "Device connected" : "Device not connected";
+    }
+
+    private string GetEmulatorPresenceClass()
+    {
+        return (File.Exists(Path.Combine(emuFolder, "Gearboy.exe")) && File.Exists(Path.Combine(emuFolder, "SDL2.dll"))) ? "device-connected" : "device-disconnected";
+    }
+
+    private string RetrieveEmulatorPresence()
+    {
+        return (File.Exists(Path.Combine(emuFolder, "Gearboy.exe")) && File.Exists(Path.Combine(emuFolder, "SDL2.dll"))) ? "Emulator downloaded" : "Emulator not downloaded";
+    }
+
+    private bool PortPickerEnabled()
+    {
+        return !ConnectionService.IsConnectionEstablished;
+    }
+
+    private bool ConnectButtonEnabled() 
+    {
+        return !(_pickedPort == "Found ports") && !ConnectionService.IsConnectionEstablished;
+    }
+
+    private bool DisconnectButtonEnabled()
+    {
+        return ConnectionService.IsConnectionEstablished;
+    }
+
+    private void HandleDropdownItemClick(string port) => _pickedPort = port;
+
+    private async Task Connect()
+    {
+        try
+        {
+            await ConnectionService.StartConnection(_pickedPort);
+        } catch (Exception e)
+        {
+            _errorMessage = e.Message;
+        }
+        StateHasChanged();
+    }
+
+    private void Disconnect()
+    {
+        ConnectionService.StopConnection();
+        StateHasChanged();
+    }
+
+    private void RefreshPorts()
+    {
+        var ports = _serialClient.RetrieveAvailableCOMPorts();
+        _comPorts.Clear();
+        foreach (var port in ports)
+        {
+            _comPorts.Add(port);
+        }
+    }
+
+    private async Task DownloadAndExtractEmulatorAsync()
+    {
+        string emuFolder = Path.Combine(appBaseFolder, "emu");
+        string zipPath = Path.Combine(appBaseFolder, "Gearboy.zip");
+
+        // Pobieramy plik ZIP
+        using var client = new HttpClient();
+        var data = await client.GetByteArrayAsync("https://github.com/drhelius/Gearboy/releases/download/3.7.4/Gearboy-3.7.4-windows-x64.zip");
+        await File.WriteAllBytesAsync(zipPath, data);
+
+        // Czyścimy folder emu
+        if (Directory.Exists(emuFolder))
+            Directory.Delete(emuFolder, true);
+
+        Directory.CreateDirectory(emuFolder);
+
+        await Task.Run(() => ZipFile.ExtractToDirectory(zipPath, emuFolder));
+
+        File.Delete(zipPath);
+    }
+
+
+    private async Task DownloadEmulator()
+    {
+        await DownloadAndExtractEmulatorAsync();
+    }
+}

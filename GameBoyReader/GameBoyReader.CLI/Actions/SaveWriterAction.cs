@@ -1,11 +1,4 @@
 ﻿using GameBoyReader.Core.Services;
-using GameBoyReader.Core.States;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection.Metadata;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace GameBoyReader.CLI.Actions
 {
@@ -15,9 +8,9 @@ namespace GameBoyReader.CLI.Actions
         private static CartridgeDumperService _dumperService = new();
         public static async Task WriteSaveAction()
         {
-            if (!ConnectionStatus.IsConnectionEstablished)
+            if (!ConnectionService.IsConnectionEstablished)
             {
-                COMPortPicker.TerminalCOMPortPicker();
+               await COMPortPicker.TerminalCOMPortPicker();
             }
             int requiredFileSize = await _preparationService.RetrieveRAMSize();
             bool transferComplete = false;
@@ -25,7 +18,7 @@ namespace GameBoyReader.CLI.Actions
             while (!transferComplete) {
                 Console.Clear();
                 Console.WriteLine("Choose file to be written to cartridge, leave empty to return to previous menu: ");
-                string path = Console.ReadLine();
+                string? path = Console.ReadLine();
                 if (path == null || path == "")
                 {
                     return;

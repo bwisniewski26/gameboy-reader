@@ -1,0 +1,10 @@
+﻿<link href="css/cartridge.css" rel="stylesheet" />
+<div class="cartridge-tile">
+    <div class="cartridge-image"></div>
+    <div class="cartridge-title">@Name</div>
+</div>
+
+@code {
+    [Parameter]
+    public string Name { get; set; } = string.Empty;
+}

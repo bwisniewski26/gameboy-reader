@@ -1,11 +1,5 @@
 ﻿using GameBoyReader.Core.Models;
 using GameBoyReader.Core.Services;
-using GameBoyReader.Core.States;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace GameBoyReader.CLI.Actions
 {
@@ -14,13 +8,12 @@ namespace GameBoyReader.CLI.Actions
         private static CartridgePreparationService cartridgeService = new();
         public async static Task VerifyBitmap()
         {
-            if (!ConnectionStatus.IsConnectionEstablished)
+            if (!ConnectionService.IsConnectionEstablished)
             {
-                COMPortPicker.TerminalCOMPortPicker();
+                await COMPortPicker.TerminalCOMPortPicker();
             }
             RetrievedBitmap result = await cartridgeService.ValidateBootBitmap();
-            Console.WriteLine("");
-            Console.WriteLine("Received data:");
+            Console.WriteLine("\nReceived data:");
             foreach (var bit in result.Bitmap)
             {
                 Console.Write(bit);
@@ -36,7 +29,7 @@ namespace GameBoyReader.CLI.Actions
             }
             else
             {
-                Console.WriteLine("Received boot bitmap was incorrect.");
+                Console.WriteLine("\nReceived boot bitmap was incorrect.");
             }
         }
 
