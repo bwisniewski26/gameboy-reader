@@ -2,6 +2,6 @@
 {
     public class PathInputNullException: Exception
     {
-        public override string Message => "Path to save dumped file is null. Launch this app again.";
+        public override string Message => "Provided path to file is null. Launch this app again.";
     }
 }

@@ -1,9 +1,4 @@
-﻿body {
-}
-body {
-}
-
-.cartridge-grid {
+﻿.cartridge-grid {
     display: grid;
     grid-template-columns: repeat(5, 1fr);
     gap: 2rem;
@@ -20,13 +15,12 @@ body {
     padding: 0.5rem;
     text-align: center;
     color: white;
-    width: 140px; /* lekko większe, żeby ładnie wyglądały w rzędzie */
+    width: 140px;
 }
 
-/* Pixelart kartridża */
 .cartridge-image {
-    width: 120px; /* ~40px ×3 */
-    height: 144px; /* ~48px ×3 */
+    width: 120px; 
+    height: 144px; 
     background-image: url('/cartridge_icon.png');
     background-repeat: no-repeat;
     background-size: contain;
@@ -35,13 +29,11 @@ body {
     transition: transform 0.2s ease, filter 0.2s ease;
 }
 
-/* Efekt hover */
 .cartridge-tile:hover .cartridge-image {
     transform: translateY(-6px);
     filter: brightness(1.15);
 }
 
-/* Tytuł gry */
 .cartridge-title {
     margin-top: 8px;
     font-size: 1rem;

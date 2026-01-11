@@ -1,4 +1,5 @@
-﻿using GameBoyReader.Core.Models;
+﻿using GameBoyReader.Core.Exceptions;
+using GameBoyReader.Core.Models;
 using GameBoyReader.Core.Services;
 
 namespace GameBoyReader.CLI.Actions
@@ -10,7 +11,8 @@ namespace GameBoyReader.CLI.Actions
             RAM,
             ROM
         }
-        private static CartridgeDumperService dumperService = new();
+        private static CartridgeDumperService _dumperService = new();
+        private static CartridgePreparationService _preparationService = new();
         public static async Task DumpCartridge()
         {
             if (!ConnectionService.IsConnectionEstablished)
@@ -18,7 +20,7 @@ namespace GameBoyReader.CLI.Actions
                 await COMPortPicker.TerminalCOMPortPicker();
             }
 
-            CartridgeContent content = await dumperService.DumpCartridge(null);
+            CartridgeContent content = await _dumperService.DumpCartridge(null);
 
 
             Console.Clear();
@@ -28,23 +30,28 @@ namespace GameBoyReader.CLI.Actions
             while (true)
             {
                 int fileNameIssues = 0;
-                if (path == null) path = "";
+                if (path != null && path == null)
+                {
+                    path = "";
+                    Console.WriteLine("File name cannot be empty.");
+                    fileNameIssues++;
+                }
                 if (path != null && path.Length > 32)
                 {
                     Console.WriteLine("File name cannot be longer than 32 characters");
                     fileNameIssues++;
                 } 
-                if (path.Length == 0)
+                if (path != null && path.Length == 0)
                 {
                     Console.WriteLine("File name cannot be empty.");
                     fileNameIssues++;
                 } 
-                if (File.Exists(Path.Combine(RetrieveSaveLocation(DumpType.ROM), path)))
+                if (path != null && File.Exists(Path.Combine(RetrieveSaveLocation(DumpType.ROM), path)))
                 {
                     Console.WriteLine("File of that name already exists");
                     fileNameIssues++;
                 }
-                if (DoesContainForbiddenCharacters(path))
+                if (path != null && DoesContainForbiddenCharacters(path))
                 {
                     Console.WriteLine("Provided file name is invalid. Please check if it contains forbidden characters or file of this name exists. Illegal characters: ");
                 string visibleIllegalCharacters = new string(
@@ -60,6 +67,10 @@ namespace GameBoyReader.CLI.Actions
                 }
                 Console.WriteLine("Please choose new filename: ");
                 path = Console.ReadLine();
+            }
+            if (path == null)
+            {
+                throw new PathInputNullException();
             }
             if (!path.EndsWith(".gb"))
             {
@@ -87,8 +98,14 @@ namespace GameBoyReader.CLI.Actions
             {
                 await COMPortPicker.TerminalCOMPortPicker();
             }
-
-            CartridgeRAMContent content = await dumperService.DumpCartridgeRAM(null);
+            Console.WriteLine("Please wait while program checks if inserted cartridge has built-in RAM...");
+            bool isRAMPresent = await _preparationService.VerifyIfRAMPresent();
+            if (!isRAMPresent)
+            {
+                Console.WriteLine("Inserted cartridge does not have RAM memory.");
+                return;
+            }
+            CartridgeRAMContent content = await _dumperService.DumpCartridgeRAM(null);
 
 
             Console.Clear();
@@ -98,23 +115,28 @@ namespace GameBoyReader.CLI.Actions
             while (true)
             {
                 int fileNameIssues = 0;
-                if (path == null) path = "";
+                if (path == null)
+                {
+                    path = "";
+                    fileNameIssues++;
+                    Console.WriteLine("File name cannot be empty.");
+                }
                 if (path != null && path.Length > 32)
                 {
                     Console.WriteLine("File name cannot be longer than 32 characters");
                     fileNameIssues++;
                 }
-                if (path.Length == 0)
+                if (path != null && path.Length == 0)
                 {
                     Console.WriteLine("File name cannot be empty.");
                     fileNameIssues++;
                 }
-                if (File.Exists(Path.Combine(RetrieveSaveLocation(DumpType.RAM), path)))
+                if (path != null && File.Exists(Path.Combine(RetrieveSaveLocation(DumpType.RAM), path)))
                 {
                     Console.WriteLine("File of that name already exists");
                     fileNameIssues++;
                 }
-                if (DoesContainForbiddenCharacters(path))
+                if (path != null && DoesContainForbiddenCharacters(path))
                 {
                     Console.WriteLine("Provided file name is invalid. Please check if it contains forbidden characters or file of this name exists. Illegal characters: ");
                     string visibleIllegalCharacters = new string(
@@ -130,6 +152,10 @@ namespace GameBoyReader.CLI.Actions
                 }
                 Console.WriteLine("Please choose new filename: ");
                 path = Console.ReadLine();
+            }
+            if (path == null)
+            {
+                throw new PathInputNullException();
             }
             if (!path.EndsWith(".sav"))
             {

@@ -9,15 +9,21 @@
 
 
 <h3>Home</h3>
-
-<div class="cartridge-grid">
-    @foreach (var file in _dumpFiles)
+@if (_dumpFiles.Count == 0)
     {
-        <div @onclick="@(() => SelectFile(file))" style="cursor: pointer;">
-            <DumpedCartridge Name="@file.title" />
-        </div>
-    }
-</div>
+       <h3>No GameBoy ROM files detected in GameBoyReader directory.</h3>
+       <p>Every GameBoy game you dump using this tool will appear here as cartridge icons.</p>
+} else
+{ 
+    <div class="cartridge-grid">
+            @foreach (var file in _dumpFiles)
+            {
+                <div @onclick="@(() => SelectFile(file))" style="cursor: pointer;">
+                    <DumpedCartridge Name="@file.title" />
+                </div>
+            }
+    </div>
+}
 
 <HxModal @ref="_fileModal" Title="@(_selectedFile.title)">
     <BodyTemplate>
@@ -31,12 +37,14 @@
         }
     </BodyTemplate>
     <FooterTemplate>
-        <HxButton Color="ThemeColor.Primary" OnClick="() => LaunchEmulator(_selectedFile.path)">Launch game</HxButton>
+        <HxButton Color="ThemeColor.Primary"
+                  OnClick="() => LaunchEmulator(_selectedFile.path)"
+                  Enabled="IsEmulatorPresent()">Launch game</HxButton>
     </FooterTemplate>
 </HxModal>
 
 @code {
-    CartridgeByteContentService cartridgeByteContentService = new();
+        CartridgeByteContentService cartridgeByteContentService = new();
 
     private List<DumpFile> _dumpFiles = new();
     private HxModal _fileModal = new();
@@ -54,7 +62,7 @@
 
         foreach (var file in files)
         {
-            if (file.EndsWith(".gb", StringComparison.OrdinalIgnoreCase))
+            if (file.EndsWith(".gb", StringComparison.OrdinalIgnoreCase) && (file.Length / 1024) < 2048)
             {
                 try
                 {
@@ -92,6 +100,7 @@
 
     private void LaunchEmulator(string filePath)
     {
+        _launchError = "";
         try
         {
             Process.Start(new ProcessStartInfo

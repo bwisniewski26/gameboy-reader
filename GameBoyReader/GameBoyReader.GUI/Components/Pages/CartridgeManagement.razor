@@ -6,17 +6,17 @@
 @using GameBoyReader.Core.Utils
 @using Microsoft.Maui.Storage;
 
-<h1>Cartridge Tools</h1>
+<h3>Cartridge Tools</h3>
 
 @if (!ConnectionService.IsConnectionEstablished)
 {
     <div class="connection-setup-warning">
-        <h2>To use these tools you must first connect to your device. In order to do so, please proceed to <a href="/connection_setup" class="connection-setup-href">Connection Setup</a></h2>
+        <h4>To use these tools you must first connect to your device. In order to do so, please proceed to <a href="/connection_setup" class="connection-setup-href">Connection Setup</a></h4>
     </div>
 }
 
 <div class="page-content-container">
-    <h2>Cartridge boot bitmap</h2>
+    <h4>Cartridge boot bitmap</h4>
     <p>Cartridge boot bitmap is used by GameBoy to determine if inserted cartridge is valid and its contents are safe to execute.</p>
     <HxButton Color="ThemeColor.Primary" OnClick="CheckCartridgeBootBitmap" Enabled="ConnectionService.IsConnectionEstablished && !_isOperationRunning">Verify cartridge boot bitmap</HxButton>
     <div class="dump-result">
@@ -33,7 +33,7 @@
 </div>
 
 <div class="page-content-container">
-    <h2>Cartridge information</h2>
+    <h4>Cartridge information</h4>
     <HxButton Color="ThemeColor.Primary" OnClick="RetrieveCartridgeInformation" Enabled="ConnectionService.IsConnectionEstablished && !_isOperationRunning">Retrieve cartridge information</HxButton>
     <div class="dump-result">
        <p>Game title: @_cartridgeInformation.Name</p>
@@ -44,13 +44,13 @@
 </div>
 
 <div class="page-content-container">
-    <h2>Dump cartridge ROM</h2>
+    <h4>Dump cartridge ROM</h4>
     <p>This tool allows you to copy cartridge's content onto your computer. Depending on the game this can take from few seconds up to few minutes.</p>
     <HxButton Color="ThemeColor.Primary" OnClick="DumpROM" Enabled="ConnectionService.IsConnectionEstablished && !_isOperationRunning">Dump cartridge ROM</HxButton>
 </div>
 
 <div class="page-content-container">
-    <h2>Dump cartridge RAM</h2>
+    <h4>Dump cartridge RAM</h4>
     <p>This tool allows you to dump cartridge's RAM content onto your computer. It often contains saved states of your games. Please note some cartridges do not have RAM memory built in, hence dumping its content is not possible.</p>
     <HxButton Color="ThemeColor.Primary" OnClick="DumpRAM" Enabled="ConnectionService.IsConnectionEstablished && !_isOperationRunning">Dump cartridge RAM</HxButton>
     @if (_dumpRAMError != "")
@@ -60,7 +60,7 @@
 </div>
 
 <div class="page-content-container">
-    <h2>Write cartridge RAM</h2>
+    <h4>Write cartridge RAM</h4>
     <p>This tool allows you to write RAM file stored on your computer onto cartridge's RAM memory. Please note that writing RAM from cartridge containing another game than it was dumped from may cause data corruption. Proceed with caution.</p>
     <HxButton Color="ThemeColor.Warning" OnClick="ShowWriteModal" Enabled="ConnectionService.IsConnectionEstablished && !_isOperationRunning">Write RAM wizard</HxButton>
 </div>
@@ -82,10 +82,6 @@
         }
     </BodyTemplate>
 	<FooterTemplate>
-        @if (_dumpType == DumpOperationType.RAM)
-        {
-            <HxButton Color="ThemeColor.Secondary">Verify selected file</HxButton>
-        }
         <HxButton Color="ThemeColor.Success" OnClick="@SaveDumpedData">Save</HxButton>
         <HxButton Color="ThemeColor.Danger" OnClick="@CancelDumpSave">Cancel</HxButton>
     </FooterTemplate>
@@ -220,13 +216,13 @@
             _saveReturnMessage = "File name cannot be empty.";
             if (_fileName == null) return;
         }
+        if (_fileName.Length > 32)
+        {
+            _saveReturnMessage += "\nFile name is too long.";
+        }
         if (DoesContainForbiddenCharacters(_fileName))
         {
             _saveReturnMessage += "\nFile name contains forbidden characters.";
-        }
-        if (_saveReturnMessage.Length > 0)
-        {
-            return;
         }
         switch (_dumpType)
         {
@@ -248,17 +244,22 @@
         }
         if (File.Exists(Path.Combine(RetrieveSaveLocation(), _fileName)))
         {
-            _saveReturnMessage = "File of this name exists in " + Path.Combine(RetrieveSaveLocation(), _fileName) + ". Try another file name.";
+            _saveReturnMessage += "\n File of this name exists in " + Path.Combine(RetrieveSaveLocation(), _fileName) + ". Try another file name.";
+        }
+        if (_saveReturnMessage.Length > 0)
+        {
             return;
         }
-
-        try
+        else
         {
-            await File.WriteAllBytesAsync(Path.Combine(RetrieveSaveLocation(), _fileName), _dumpType == DumpOperationType.ROM ? _cartridgeContent.CartridgeByteContent.ToArray() : _cartridgeRAMContent.CartridgeRAMByteContent.ToArray());
-        }
-        catch (Exception ex)
-        {
-            _saveErrorMessage += ex.Message;
+            try
+            {
+                await File.WriteAllBytesAsync(Path.Combine(RetrieveSaveLocation(), _fileName), _dumpType == DumpOperationType.ROM ? _cartridgeContent.CartridgeByteContent.ToArray() : _cartridgeRAMContent.CartridgeRAMByteContent.ToArray());
+            }
+            catch (Exception ex)
+            {
+                _saveErrorMessage += ex.Message;
+            }
         }
         await _saveDumpModal.HideAsync();
         SetVariablesToDefault();

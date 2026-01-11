@@ -3,11 +3,11 @@
 @using System.Collections.ObjectModel
 @using System.IO.Compression;
 
-<h1>Settings</h1>
+<h3>Settings</h3>
 <div class="page-content-container">
-    <h2>Connection Settings</h2>
-    <h3>This tool allows you to connect to GameBoy Reader device. Choose COM port where your device is connected and press 'Connect'.</h3>
-    <h4>Connection status: <span class="@GetConnectionClass()">@RetrieveConnectionStatus()</span></h4>
+    <h3>Connection Settings</h3>
+    <h4>This tool allows you to connect to GameBoy Reader device. Choose COM port where your device is connected and press 'Connect'.</h4>
+    <p>Connection status: <span class="@GetConnectionClass()">@RetrieveConnectionStatus()</span></p>
     <div class="connection-control-buttons d-flex align-items-center gap-4">
         <HxDropdownButtonGroup OnShown="RefreshPorts" class="fixed-dropdown">
             <HxDropdownToggleButton Color="ThemeColor.Primary" Enabled="@PortPickerEnabled()">@_pickedPort</HxDropdownToggleButton>
@@ -25,13 +25,13 @@
 
     @if (!(@_errorMessage == ""))
     {
-        <h3 class="error-message">@_errorMessage</h3>
+        <p class="error-message">@_errorMessage</p>
     }
 </div>
 
 <div class="page-content-container">
-    <h2>Emulator download</h2>
-    <h3>This tool allows you to download open-source emulator to open your dumped games straight from this app. It can also redownload it if needed.</h3>
+    <h3>Emulator download</h3>
+    <h4>This tool allows you to download open-source emulator to open your dumped games straight from this app. It can also redownload it if needed.</h4>
     <p>Emulator downloaded by this tool is <a href="https://github.com/drhelius/Gearboy">Gearboy</a> made by <a href="https://github.com/drhelius">drhelius</a> distributed on GPL-3.0 license.</p>
     <p>Is emulator downloaded: <span class="@GetEmulatorPresenceClass()">@RetrieveEmulatorPresence()</span></p>
     <div class="connection-control-buttons d-flex align-items-center gap-4">
