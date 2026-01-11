@@ -105,5 +105,18 @@ namespace GameBoyReader.Core.Services
             var mbcBytes = await arduinoClient.RetrieveBytes("GET_MBC");
             return CartridgeTypeConverter.ConvertFromByte(mbcBytes.First());
         }
+
+        public async Task<bool> VerifyIfRAMPresent()
+        {
+            int ramSize = await RetrieveRAMSize();
+            CartridgeInformation cartridgeInformation = await RetrieveCartridgeInformation();
+            if (ramSize == 0 && cartridgeInformation.Type != CartridgeType.MBC2 && cartridgeInformation.Type != CartridgeType.MBC2_BATTERY)
+            {
+                return false;
+            } else
+            {
+                return true;
+            }
+        }
     }
 }

@@ -11,6 +11,8 @@ namespace GameBoyReader.Core.Services
         public Task<int> RetrieveRAMSize();
 
         public Task<CartridgeType> RetrieveCartridgeType();
+
+        public Task<bool> VerifyIfRAMPresent();
         
     }
 }

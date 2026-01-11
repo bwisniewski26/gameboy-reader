@@ -1,4 +1,6 @@
-﻿using System.IO.Ports;
+﻿using GameBoyReader.Core.Exceptions;
+using System.IO.Ports;
+using System.Text;
 
 namespace GameBoyReader.Core.Services
 {
@@ -18,6 +20,11 @@ namespace GameBoyReader.Core.Services
             try
             {
                 var result = await serialClient.RetrieveBytes("PING");
+                string decodedResult = Encoding.ASCII.GetString(result.ToArray(), 0, 4);
+                if (decodedResult != "PONG")
+                {
+                    throw new SerialConnectionException();
+                }
                 IsConnectionEstablished = true;
             } catch (Exception ex)
             {

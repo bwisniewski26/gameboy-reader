@@ -14,7 +14,14 @@ namespace GameBoyReader.CLI.Actions
             }
             int requiredFileSize = await _preparationService.RetrieveRAMSize();
             bool transferComplete = false;
-
+            Console.WriteLine("Please wait while program checks if inserted cartridge has built-in RAM...");
+            bool isRAMPresent = await _preparationService.VerifyIfRAMPresent();
+            if (!isRAMPresent)
+            {
+                transferComplete = true;
+                Console.WriteLine("Inserted cartridge does not have RAM memory.");
+                return;
+            }
             while (!transferComplete) {
                 Console.Clear();
                 Console.WriteLine("Choose file to be written to cartridge, leave empty to return to previous menu: ");

@@ -98,7 +98,6 @@ namespace GameBoyReader.Core.Services
             int blockSize = 1;
             for (int i = 0; i < bytes.Length; i += blockSize)
             {
-                int len = Math.Min(blockSize, bytes.Length - i);
                 ConnectionService.SerialPort.Write(bytes, i, 1);
             }
 

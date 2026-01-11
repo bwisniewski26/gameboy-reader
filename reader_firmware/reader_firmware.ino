@@ -531,10 +531,18 @@ void loop()
         saveRAMToCart();
       } else if (command == "CHECKSUM_VERIFY")
       {
+        Serial.println("START");
+        Serial.flush();
         Serial.println(ValidCheckSum());
+        Serial.println("END");
+        Serial.flush();
       } else if (command == "PING")
       {
+        Serial.println("START");
+        Serial.flush();
         Serial.print("PONG");
+        Serial.println("END");
+        Serial.flush();
       }
     } 
 }

@@ -1,6 +1,5 @@
 ﻿using GameBoyReader.Core.Services;
 using GameBoyReader.CLI.Actions;
-using System.IO.Ports;
 
 namespace GameBoyReader.CLI
 {
@@ -19,7 +18,7 @@ namespace GameBoyReader.CLI
 
             Console.CancelKeyPress += (sender, eventArgs) =>
             {
-                Console.WriteLine("SIGINT signal received. This app will shutdown. Cleaning up...");
+                Console.WriteLine("CTRL+C hotkey received. This app will shutdown. Cleaning up...");
                 OnProcessExit(sender, eventArgs);
             };
 
