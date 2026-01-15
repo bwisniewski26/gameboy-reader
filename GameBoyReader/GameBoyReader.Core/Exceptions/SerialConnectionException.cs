@@ -2,6 +2,6 @@
 {
     public class SerialConnectionException: Exception
     {
-        public override string Message => "Serial connection with device has failed. Try launching this app again.";
+        public override string Message => "Serial connection with device has failed. Please select different COM port and try again. If this issue persists please launch this app again.";
     }
 }
