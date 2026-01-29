@@ -48,7 +48,7 @@
 @code {
     private ObservableCollection<string> _comPorts = new ObservableCollection<string>();
     private ArduinoSerialClient _serialClient = new();
-    private string _pickedPort = ConnectionService.IsConnectionEstablished ? ConnectionService.SerialPort.PortName : "Detected ports";
+    private string _pickedPort = ConnectionService.IsConnectionEstablished && ConnectionService.SerialPort != null ? ConnectionService.SerialPort.PortName : "Detected ports";
     private string _errorMessage = "";
     private string _downloadError = "";
 
