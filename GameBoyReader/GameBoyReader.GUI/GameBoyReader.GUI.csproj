@@ -10,6 +10,7 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <EnableDefaultCssItems>false</EnableDefaultCssItems>
         <Nullable>enable</Nullable>
+		<WindowsAppSDKSelfContained>true</WindowsAppSDKSelfContained>
 
         <!-- Display name -->
         <ApplicationTitle>GameBoyReader GUI</ApplicationTitle>
