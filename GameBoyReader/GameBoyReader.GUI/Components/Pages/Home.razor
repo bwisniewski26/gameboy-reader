@@ -44,7 +44,7 @@
 </HxModal>
 
 @code {
-        CartridgeByteContentService cartridgeByteContentService = new();
+    CartridgeByteContentService cartridgeByteContentService = new();
 
     private List<DumpFile> _dumpFiles = new();
     private HxModal _fileModal = new();
@@ -58,7 +58,12 @@
     protected override async Task OnInitializedAsync()
     {
         var folderPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments), "GameBoyReader");
+        if (!File.Exists(folderPath))
+        {
+            Directory.CreateDirectory(folderPath);
+        }
         var files = Directory.GetFiles(folderPath);
+        
 
         foreach (var file in files)
         {
