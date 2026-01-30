@@ -45,6 +45,7 @@ void setAddress(uint16_t address)
 
 uint8_t readByte(uint16_t address)
 {
+    DDRL = 0x00;
     setAddress(address);
     digitalWrite(CS_PIN, LOW);
     digitalWrite(RD_PIN, LOW);
@@ -64,15 +65,16 @@ void writeByte(uint8_t data, uint16_t address)
 
   DDRL = 0xFF;       
   PORTL = data;       
-  delayMicroseconds(1); 
+  delayMicroseconds(15); 
 
   digitalWrite(WR_PIN, LOW);  
-  delayMicroseconds(2);       
+  delayMicroseconds(15);       
   digitalWrite(WR_PIN, HIGH);
 
   digitalWrite(CS_PIN, HIGH);
   
-  DDRL = 0x00;      
+  DDRL = 0x00;
+  delayMicroseconds(5);     
 }
 
 
@@ -502,7 +504,6 @@ void loop()
 
     if (Serial.available()) {
       String command = Serial.readStringUntil('\n');
-      Serial.println(command);
       if (command == "GET_HEADER") {
           dumpHeader();
       }
