@@ -169,7 +169,6 @@
         }
         await _saveDumpModal.ShowAsync();
         SwitchEnablingOperations();
-        SetVariablesToDefault();
     }
 
     private async Task DumpRAM()
@@ -182,7 +181,6 @@
             await _saveDumpModal.ShowAsync();       
         }
         SwitchEnablingOperations();
-        SetVariablesToDefault();
     }
 
     private async Task<bool> VerifyCartridgeRAMPresence(bool isDumpingRom = false)
@@ -249,6 +247,7 @@
         if (File.Exists(Path.Combine(RetrieveSaveLocation(), _fileName)))
         {
             _saveReturnMessage += "\n File of this name exists in " + Path.Combine(RetrieveSaveLocation(), _fileName) + ". Try another file name.";
+            _fileName = Path.GetFileNameWithoutExtension(_fileName);
         }
         if (_saveReturnMessage.Length > 0)
         {
@@ -371,7 +370,7 @@
         _cartridgeRAMContent = new();
         _selectedRAMFileContent = new byte[1];
         _dumpType = DumpOperationType.ROM;
-        _fileName = "game_dump.gb";
+        _fileName = "game_dump";
         _saveErrorMessage = "";
         _saveReturnMessage = "";
         _writeRAMError = "";
