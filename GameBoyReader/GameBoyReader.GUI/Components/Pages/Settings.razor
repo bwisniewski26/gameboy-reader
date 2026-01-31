@@ -10,7 +10,7 @@
     <p>Connection status: <span class="@GetConnectionClass()">@RetrieveConnectionStatus()</span></p>
     <div class="connection-control-buttons d-flex align-items-center gap-4">
         <HxDropdownButtonGroup OnShown="RefreshPorts" class="fixed-dropdown">
-            <HxDropdownToggleButton Color="ThemeColor.Primary" Enabled="@PortPickerEnabled()">@_pickedPort</HxDropdownToggleButton>
+            <HxDropdownToggleButton Color="ThemeColor.Primary" Enabled="@(PortPickerEnabled())">@_pickedPort</HxDropdownToggleButton>
             <HxDropdownMenu>
                 @foreach (var port in _comPorts)
                 {
@@ -20,7 +20,7 @@
 
         </HxDropdownButtonGroup>
 
-        <HxButton OnClick="Connect" Color="ThemeColor.Success" Enabled="@ConnectButtonEnabled()">Connect to device</HxButton> <HxButton OnClick="Disconnect" Color="ThemeColor.Danger" Enabled="@DisconnectButtonEnabled()">Disconnect from device</HxButton>
+        <HxButton OnClick="Connect" Color="ThemeColor.Success" Enabled="@(ConnectButtonEnabled() && _pickedPort != "Detected ports")">Connect to device</HxButton> <HxButton OnClick="Disconnect" Color="ThemeColor.Danger" Enabled="@DisconnectButtonEnabled()">Disconnect from device</HxButton>
     </div>
 
     @if (!(@_errorMessage == ""))
