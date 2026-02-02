@@ -95,10 +95,11 @@ namespace GameBoyReader.Core.Services
             ConnectionService.SerialPort.Write("START");
             await Task.Delay(200);
 
-            int blockSize = 1;
+            int blockSize = 16;
             for (int i = 0; i < bytes.Length; i += blockSize)
             {
-                ConnectionService.SerialPort.Write(bytes, i, 1);
+                ConnectionService.SerialPort.Write(bytes, i, blockSize);
+                await Task.Delay(1);
             }
 
             await Task.Delay(200);
